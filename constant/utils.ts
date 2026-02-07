@@ -1,0 +1,1 @@
+export const BASE_URL = "https://mowdmin-mobile-be-qwo0.onrender.com/api/v1";
