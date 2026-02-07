@@ -19,7 +19,6 @@ const navigation = [
   { name: 'Groups', href: '/dashboard/groups', icon: '👫' },
   { name: 'Ministries', href: '/dashboard/ministries', icon: '⛪' },
   { name: 'Bible Stories', href: '/dashboard/bible-stories', icon: '📖' },
-  { name: 'Bible Verses', href: '/dashboard/bible-verses', icon: '📜' },
 ];
 
 interface SidebarProps {

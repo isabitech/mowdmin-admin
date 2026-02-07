@@ -194,9 +194,4 @@ export const endpoints = {
         addTag: (id: string) => `/bible-stories/${id}/tags`,
         removeTag: (id: string) => `/bible-stories/${id}/tags`,
     },
-    bibleVerses: {
-        create: "/bible-verses",
-        list: "/bible-verses",
-        daily: "/bible-verses/daily",
-    },
 }
