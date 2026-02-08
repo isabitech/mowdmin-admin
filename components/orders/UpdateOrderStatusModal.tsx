@@ -20,8 +20,8 @@ export default function UpdateOrderStatusModal({
 }: UpdateOrderStatusModalProps) {
   const [formData, setFormData] = useState<UpdateOrderStatusData>({
     status: order?.status || 'pending',
-    trackingNumber: order?.trackingNumber || '',
-    notes: order?.notes || '',
+    trackingNumber: '',
+    notes: '',
   });
 
   const [errors, setErrors] = useState<Partial<UpdateOrderStatusData>>({});
@@ -30,8 +30,8 @@ export default function UpdateOrderStatusModal({
   if (order && formData.status !== order.status) {
     setFormData({
       status: order.status,
-      trackingNumber: order.trackingNumber || '',
-      notes: order.notes || '',
+      trackingNumber: '',
+      notes: '',
     });
   }
 
@@ -57,8 +57,8 @@ export default function UpdateOrderStatusModal({
     if (!isLoading) {
       setFormData({
         status: order?.status || 'pending',
-        trackingNumber: order?.trackingNumber || '',
-        notes: order?.notes || '',
+        trackingNumber: '',
+        notes: '',
       });
       setErrors({});
       onClose();
@@ -79,18 +79,14 @@ export default function UpdateOrderStatusModal({
   const getAvailableStatuses = (currentStatus: OrderStatus): OrderStatus[] => {
     switch (currentStatus) {
       case 'pending':
-        return ['confirmed', 'cancelled'];
-      case 'confirmed':
-        return ['processing', 'cancelled'];
-      case 'processing':
+        return ['paid', 'cancelled'];
+      case 'paid':
         return ['shipped', 'cancelled'];
       case 'shipped':
-        return ['delivered'];
-      case 'delivered':
-        return ['refunded'];
-      case 'cancelled':
+        return ['completed'];
+      case 'completed':
         return [];
-      case 'refunded':
+      case 'cancelled':
         return [];
       default:
         return [];
@@ -98,7 +94,6 @@ export default function UpdateOrderStatusModal({
   };
 
   const availableStatuses = getAvailableStatuses(order.status);
-  const allStatuses = Object.entries(ORDER_STATUS_CONFIG);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -120,8 +115,8 @@ export default function UpdateOrderStatusModal({
           </div>
 
           <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600">Order: <span className="font-medium">#{order.orderNumber}</span></p>
-            <p className="text-sm text-gray-600">Customer: <span className="font-medium">{order.user.name}</span></p>
+            <p className="text-sm text-gray-600">Order: <span className="font-medium">#{order._id}</span></p>
+            <p className="text-sm text-gray-600">Customer: <span className="font-medium">{order.userId.name}</span></p>
             <p className="text-sm text-gray-600">
               Current Status: 
               <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${ORDER_STATUS_CONFIG[order.status].color}`}>
@@ -150,9 +145,6 @@ export default function UpdateOrderStatusModal({
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-gray-500">
-                {ORDER_STATUS_CONFIG[formData.status]?.description}
-              </p>
             </div>
 
             {/* Tracking Number (Required for shipped status) */}
@@ -196,7 +188,7 @@ export default function UpdateOrderStatusModal({
                 disabled={isLoading}
               />
               <p className="mt-1 text-xs text-gray-500">
-                These notes are for internal use and won't be visible to the customer
+                These notes are for internal use and won&apos;t be visible to the customer
               </p>
             </div>
 

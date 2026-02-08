@@ -29,7 +29,6 @@ export default function PaymentCard({
   onView,
   onRefund,
   onProcess,
-  onCancel,
   onRetry,
   onSync,
 }: PaymentCardProps) {
@@ -57,7 +56,6 @@ export default function PaymentCard({
 
   const canRefund = ['completed', 'partially_refunded'].includes(payment.status);
   const canProcess = payment.status === 'pending';
-  const canCancel = ['pending', 'processing'].includes(payment.status);
   const canRetry = payment.status === 'failed';
 
   if (viewMode === 'grid') {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { orderService } from '@/services/orderService';
 import { 
   Order, 
@@ -33,12 +33,7 @@ export default function OrderManager() {
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    loadOrders();
-    loadStats();
-  }, [filters]);
-
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await orderService.getOrders(filters);
@@ -49,9 +44,9 @@ export default function OrderManager() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [filters]);
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const statsData = await orderService.getOrderStats();
       setStats(statsData);
@@ -59,7 +54,12 @@ export default function OrderManager() {
       console.error('Error loading order stats:', error);
       // Don't show error toast for stats as it's not critical
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadOrders();
+    loadStats();
+  }, [filters, loadOrders, loadStats]);
 
   const handleOrderSelect = (orderId: string, isSelected: boolean) => {
     const newSelected = new Set(selectedOrders);

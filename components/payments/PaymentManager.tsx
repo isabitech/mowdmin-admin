@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { paymentService } from '@/services/paymentService';
 import { 
   Payment, 
@@ -36,12 +36,7 @@ export default function PaymentManager() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    loadPayments();
-    loadStats();
-  }, [filters, currentPage]);
-
-  const loadPayments = async () => {
+  const loadPayments = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await paymentService.getPayments(filters, currentPage, 20);
@@ -53,16 +48,21 @@ export default function PaymentManager() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [filters, currentPage]);
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const statsData = await paymentService.getPaymentStats(filters);
       setStats(statsData);
     } catch (error) {
       console.error('Error loading payment stats:', error);
     }
-  };
+  }, [filters]);
+
+  useEffect(() => {
+    loadPayments();
+    loadStats();
+  }, [loadPayments, loadStats]);
 
   const handlePaymentSelect = (paymentId: string, isSelected: boolean) => {
     const newSelected = new Set(selectedPayments);
@@ -185,24 +185,6 @@ export default function PaymentManager() {
     } catch (error) {
       console.error('Error bulk processing payments:', error);
       toast.error('Failed to process payments');
-    }
-  };
-
-  const handleBulkRefund = async (refundData: RefundPaymentData) => {
-    if (selectedPayments.size === 0) return;
-
-    try {
-      const result = await paymentService.bulkRefundPayments(Array.from(selectedPayments), refundData);
-      toast.success(`${result.success.length} payments refunded successfully`);
-      if (result.failed.length > 0) {
-        toast.error(`${result.failed.length} payments failed to refund`);
-      }
-      setSelectedPayments(new Set());
-      loadPayments();
-      loadStats();
-    } catch (error) {
-      console.error('Error bulk refunding payments:', error);
-      toast.error('Failed to refund payments');
     }
   };
 

@@ -20,17 +20,17 @@ export default function CancelOrderModal({
 }: CancelOrderModalProps) {
   const [formData, setFormData] = useState<CancelOrderData>({
     reason: '',
-    refundAmount: order?.totalAmount || 0,
+    refundAmount: order?.totalAmount ? parseFloat(order.totalAmount.$numberDecimal) : 0,
     notifyCustomer: true,
   });
 
-  const [errors, setErrors] = useState<Partial<CancelOrderData>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof CancelOrderData, string>>>({});
 
   // Reset form when order changes
-  if (order && formData.refundAmount !== order.totalAmount) {
+  if (order && formData.refundAmount !== parseFloat(order.totalAmount.$numberDecimal)) {
     setFormData({
       reason: '',
-      refundAmount: order.totalAmount,
+      refundAmount: parseFloat(order.totalAmount.$numberDecimal),
       notifyCustomer: true,
     });
   }
@@ -47,7 +47,7 @@ export default function CancelOrderModal({
   ];
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<CancelOrderData> = {};
+    const newErrors: Partial<Record<keyof CancelOrderData, string>> = {};
 
     if (!formData.reason.trim()) {
       newErrors.reason = 'Cancellation reason is required';
@@ -57,7 +57,7 @@ export default function CancelOrderModal({
       newErrors.refundAmount = 'Refund amount cannot be negative';
     }
 
-    if (formData.refundAmount !== undefined && order && formData.refundAmount > order.totalAmount) {
+    if (formData.refundAmount !== undefined && order && formData.refundAmount > parseFloat(order.totalAmount.$numberDecimal)) {
       newErrors.refundAmount = 'Refund amount cannot exceed order total';
     }
 
@@ -76,7 +76,7 @@ export default function CancelOrderModal({
     if (!isLoading) {
       setFormData({
         reason: '',
-        refundAmount: order?.totalAmount || 0,
+        refundAmount: order?.totalAmount ? parseFloat(order.totalAmount.$numberDecimal) : 0,
         notifyCustomer: true,
       });
       setErrors({});
@@ -132,16 +132,16 @@ export default function CancelOrderModal({
                   Warning: This action cannot be undone
                 </p>
                 <p className="text-sm text-red-700 mt-1">
-                  Order #{order.orderNumber} will be permanently cancelled.
+                  Order #{order._id} will be permanently cancelled.
                 </p>
               </div>
             </div>
           </div>
 
           <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600">Order: <span className="font-medium">#{order.orderNumber}</span></p>
-            <p className="text-sm text-gray-600">Customer: <span className="font-medium">{order.user.name}</span></p>
-            <p className="text-sm text-gray-600">Total: <span className="font-medium">{formatCurrency(order.totalAmount)}</span></p>
+            <p className="text-sm text-gray-600">Order: <span className="font-medium">#{order._id}</span></p>
+            <p className="text-sm text-gray-600">Customer: <span className="font-medium">{order.userId.name}</span></p>
+            <p className="text-sm text-gray-600">Total: <span className="font-medium">{formatCurrency(parseFloat(order.totalAmount.$numberDecimal))}</span></p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -201,7 +201,7 @@ export default function CancelOrderModal({
                     type="number"
                     id="refundAmount"
                     min="0"
-                    max={order.totalAmount}
+                    max={parseFloat(order.totalAmount.$numberDecimal)}
                     step="0.01"
                     value={formData.refundAmount || ''}
                     onChange={(e) => handleInputChange('refundAmount', parseFloat(e.target.value) || 0)}
@@ -216,7 +216,7 @@ export default function CancelOrderModal({
                   <p className="mt-1 text-sm text-red-600">{errors.refundAmount}</p>
                 )}
                 <p className="mt-1 text-xs text-gray-500">
-                  Maximum refund: {formatCurrency(order.totalAmount)}
+                  Maximum refund: {formatCurrency(parseFloat(order.totalAmount.$numberDecimal))}
                 </p>
               </div>
             )}

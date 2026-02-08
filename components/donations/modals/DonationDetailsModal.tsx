@@ -106,7 +106,7 @@ export default function DonationDetailsModal({
                       {sourceConfig.icon} {sourceConfig.label}
                     </span>
                   </div>
-                  {donation.purpose && (
+                  {donation.purpose && donation.purpose.trim() && (
                     <div>
                       <span className="text-sm font-medium text-gray-500 block mb-1">Purpose:</span>
                       <span className="text-sm text-gray-900">{donation.purpose}</span>
@@ -124,7 +124,7 @@ export default function DonationDetailsModal({
               </div>
 
               {/* Donor Information */}
-              {!donation.isAnonymous && (
+              {!donation.isAnonymous && donation.donor && (
                 <div className="bg-blue-50 rounded-lg p-4">
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">Donor Information</h4>
                   <div className="space-y-3">
@@ -146,9 +146,7 @@ export default function DonationDetailsModal({
                       <div>
                         <span className="text-sm font-medium text-gray-500 block mb-1">Address:</span>
                         <div className="text-sm text-gray-900">
-                          <div>{donation.donor.address.street}</div>
-                          <div>{donation.donor.address.city}, {donation.donor.address.state} {donation.donor.address.zipCode}</div>
-                          <div>{donation.donor.address.country}</div>
+                          <div>{donation.donor.address}</div>
                         </div>
                       </div>
                     )}
@@ -174,7 +172,7 @@ export default function DonationDetailsModal({
                     <div className="flex justify-between">
                       <span className="text-sm font-medium text-gray-500">Progress:</span>
                       <span className="text-sm text-gray-900">
-                        {Math.round((donation.campaign.currentAmount / donation.campaign.goalAmount) * 100)}%
+                        {donation.campaign.goalAmount > 0 ? Math.round((donation.campaign.currentAmount / donation.campaign.goalAmount) * 100) : 0}%
                       </span>
                     </div>
                   </div>
@@ -203,12 +201,11 @@ export default function DonationDetailsModal({
                       </div>
                     </div>
                   )}
-                  {donation.taxReceiptGeneratedAt && (
+                  {donation.taxReceiptSent && donation.taxReceiptNumber && (
                     <div className="flex items-start space-x-3">
                       <div className="shrink-0 w-2 h-2 bg-purple-500 rounded-full mt-2"></div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Tax Receipt Generated</p>
-                        <p className="text-xs text-gray-500">{formatDate(donation.taxReceiptGeneratedAt)}</p>
+                        <p className="text-sm font-medium text-gray-900">Tax Receipt Sent</p>
                         <p className="text-xs text-gray-600">Receipt #{donation.taxReceiptNumber}</p>
                       </div>
                     </div>
@@ -222,28 +219,18 @@ export default function DonationDetailsModal({
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm font-medium text-gray-500">Method:</span>
-                    <span className="text-sm text-gray-900">{donation.paymentMethod}</span>
+                    <span className="text-sm text-gray-900">{donation.paymentMethod || 'N/A'}</span>
                   </div>
-                  {donation.transactionId && (
+                  {donation.paymentId && (
                     <div className="flex justify-between">
-                      <span className="text-sm font-medium text-gray-500">Transaction ID:</span>
-                      <span className="text-sm text-gray-900 font-mono">{donation.transactionId}</span>
+                      <span className="text-sm font-medium text-gray-500">Payment ID:</span>
+                      <span className="text-sm text-gray-900 font-mono">{donation.paymentId}</span>
                     </div>
                   )}
-                  {donation.gateway && (
-                    <div className="flex justify-between">
-                      <span className="text-sm font-medium text-gray-500">Gateway:</span>
-                      <span className="text-sm text-gray-900">{donation.gateway}</span>
-                    </div>
-                  )}
-                  {donation.feeAmount && donation.feeAmount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-sm font-medium text-gray-500">Processing Fee:</span>
-                      <span className="text-sm text-gray-900">
-                        {formatCurrency(donation.feeAmount, donation.currency)}
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-500">Status:</span>
+                    <span className="text-sm text-gray-900">{donation.paymentStatus || 'N/A'}</span>
+                  </div>
                 </div>
               </div>
 
@@ -280,7 +267,7 @@ export default function DonationDetailsModal({
               {donation.message && (
                 <div className="bg-blue-50 rounded-lg p-4">
                   <h4 className="text-lg font-semibold text-gray-900 mb-3">Donor Message</h4>
-                  <p className="text-sm text-gray-700 italic">"{donation.message}"</p>
+                  <p className="text-sm text-gray-700 italic">{donation.message}</p>
                 </div>
               )}
             </div>
@@ -303,7 +290,7 @@ export default function DonationDetailsModal({
                   Generate Tax Receipt
                 </button>
               )}
-              {hasReceipt && (
+              {hasReceipt && donation.donor?.email && (
                 <button
                   onClick={() => onSendTaxReceipt(donation.donor.email)}
                   className="px-4 py-2 text-sm font-medium text-purple-700 bg-purple-100 hover:bg-purple-200 rounded-md transition-colors"

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { OrderFilters, OrderStatus, PaymentStatus, ORDER_STATUS_CONFIG, PAYMENT_STATUS_CONFIG } from '@/constant/orderTypes';
+import { OrderFilters, OrderStatus, ORDER_STATUS_CONFIG } from '@/constant/orderTypes';
 
 interface OrderFiltersPanelProps {
   filters: OrderFilters;
@@ -21,14 +21,6 @@ export default function OrderFiltersPanel({
     { value: 'all', label: 'All Orders' },
     ...Object.entries(ORDER_STATUS_CONFIG).map(([status, config]) => ({
       value: status as OrderStatus,
-      label: config.label,
-    })),
-  ];
-
-  const paymentStatusOptions: { value: PaymentStatus | 'all'; label: string }[] = [
-    { value: 'all', label: 'All Payments' },
-    ...Object.entries(PAYMENT_STATUS_CONFIG).map(([status, config]) => ({
-      value: status as PaymentStatus,
       label: config.label,
     })),
   ];
@@ -112,21 +104,6 @@ export default function OrderFiltersPanel({
               className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
             >
               {orderStatusOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Payment Status Filter */}
-          <div className="min-w-40">
-            <select
-              value={localFilters.paymentStatus || 'all'}
-              onChange={(e) => handleFilterChange('paymentStatus', e.target.value === 'all' ? undefined : e.target.value)}
-              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-            >
-              {paymentStatusOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>

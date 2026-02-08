@@ -76,9 +76,9 @@ export default function MinistryCard({
               <p className="text-sm text-gray-600 mt-1">{ministry.description}</p>
               <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
                 <span>Type: {ministry.type}</span>
-                <span>Leader: {ministry.leader}</span>
+                <span>Leaders: {ministry.leaders?.map(l => l.name).join(', ') || 'None'}</span>
                 <span>Participants: {ministry.totalParticipants || 0}</span>
-                <span>Budget: ${ministry.budget?.toLocaleString() || 0}</span>
+                <span>Budget: ${ministry.budget?.allocated?.toLocaleString() || 0}</span>
               </div>
             </div>
           </div>
@@ -158,8 +158,8 @@ export default function MinistryCard({
             <p className="text-sm font-medium text-gray-900 capitalize">{ministry.type}</p>
           </div>
           <div>
-            <span className="text-xs text-gray-500">Leader</span>
-            <p className="text-sm font-medium text-gray-900">{ministry.leader}</p>
+            <span className="text-xs text-gray-500">Leaders</span>
+            <p className="text-sm font-medium text-gray-900">{ministry.leaders?.map(l => l.name).join(', ') || 'None'}</p>
           </div>
           <div>
             <span className="text-xs text-gray-500">Participants</span>
@@ -167,18 +167,11 @@ export default function MinistryCard({
           </div>
           <div>
             <span className="text-xs text-gray-500">Budget</span>
-            <p className="text-sm font-medium text-gray-900">${ministry.budget?.toLocaleString() || 0}</p>
+            <p className="text-sm font-medium text-gray-900">${ministry.budget?.allocated?.toLocaleString() || 0}</p>
           </div>
         </div>
 
-        {ministry.meetingSchedule && (
-          <div>
-            <span className="text-xs text-gray-500">Schedule</span>
-            <p className="text-sm font-medium text-gray-900 capitalize">
-              {ministry.meetingSchedule.frequency} - {ministry.meetingSchedule.day} at {ministry.meetingSchedule.time}
-            </p>
-          </div>
-        )}
+
 
         <div className="flex items-center justify-between text-xs text-gray-500">
           <span>Created {format(new Date(ministry.createdAt), 'MMM d, yyyy')}</span>

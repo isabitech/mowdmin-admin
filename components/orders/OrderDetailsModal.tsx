@@ -1,6 +1,7 @@
 'use client';
 
-import { Order, ORDER_STATUS_CONFIG, PAYMENT_STATUS_CONFIG } from '@/constant/orderTypes';
+import Image from 'next/image';
+import { Order, ORDER_STATUS_CONFIG } from '@/constant/orderTypes';
 
 interface OrderDetailsModalProps {
   isOpen: boolean;
@@ -29,7 +30,6 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
   };
 
   const statusConfig = ORDER_STATUS_CONFIG[order.status];
-  const paymentStatusConfig = PAYMENT_STATUS_CONFIG[order.paymentStatus];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -37,13 +37,10 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Order #{order.orderNumber}</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Order #{order._id}</h2>
               <div className="flex items-center space-x-3 mt-2">
                 <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${statusConfig.color}`}>
                   {statusConfig.label}
-                </span>
-                <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${paymentStatusConfig.color}`}>
-                  Payment: {paymentStatusConfig.label}
                 </span>
               </div>
             </div>
@@ -65,11 +62,13 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Items</h3>
                 <div className="space-y-3">
                   {order.items.map((item) => (
-                    <div key={item.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                      {item.product.imageUrl ? (
-                        <img
+                    <div key={item._id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                      {item.product?.imageUrl ? (
+                        <Image
                           src={item.product.imageUrl}
                           alt={item.product.name}
+                          width={48}
+                          height={48}
                           className="w-12 h-12 rounded-md object-cover"
                         />
                       ) : (
@@ -80,14 +79,14 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                         </div>
                       )}
                       <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">{item.product.name}</h4>
-                        <p className="text-sm text-gray-500">{item.product.category}</p>
+                        <h4 className="font-medium text-gray-900">{item.product?.name || 'Product'}</h4>
+                        <p className="text-sm text-gray-500">{item.product?.category || 'N/A'}</p>
                         <p className="text-sm text-gray-600">
-                          Qty: {item.quantity} × {formatCurrency(item.unitPrice)}
+                          Qty: {item.quantity} × {formatCurrency(parseFloat(item.unitPrice.$numberDecimal))}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold">{formatCurrency(item.totalPrice)}</p>
+                        <p className="font-semibold">{formatCurrency(parseFloat(item.totalPrice.$numberDecimal))}</p>
                       </div>
                     </div>
                   ))}
@@ -98,18 +97,10 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
               <div className="bg-gray-50 rounded-lg p-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Order Summary</h3>
                 <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Subtotal:</span>
-                    <span>{formatCurrency(order.totalAmount - order.shippingCost)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Shipping ({order.shippingMethod}):</span>
-                    <span>{formatCurrency(order.shippingCost)}</span>
-                  </div>
                   <div className="border-t pt-2">
                     <div className="flex justify-between font-semibold text-lg">
                       <span>Total:</span>
-                      <span>{formatCurrency(order.totalAmount)}</span>
+                      <span>{formatCurrency(parseFloat(order.totalAmount.$numberDecimal))}</span>
                     </div>
                   </div>
                 </div>
@@ -122,11 +113,8 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Customer Information</h3>
                 <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                  <p><span className="font-medium">Name:</span> {order.user.name}</p>
-                  <p><span className="font-medium">Email:</span> {order.user.email}</p>
-                  {order.user.phone && (
-                    <p><span className="font-medium">Phone:</span> {order.user.phone}</p>
-                  )}
+                  <p><span className="font-medium">Name:</span> {order.userId.name}</p>
+                  <p><span className="font-medium">Email:</span> {order.userId.email}</p>
                 </div>
               </div>
 
@@ -134,18 +122,7 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Shipping Address</h3>
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="font-medium">{order.shippingAddress.fullName}</p>
-                  <p>{order.shippingAddress.addressLine1}</p>
-                  {order.shippingAddress.addressLine2 && (
-                    <p>{order.shippingAddress.addressLine2}</p>
-                  )}
-                  <p>
-                    {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zipCode}
-                  </p>
-                  <p>{order.shippingAddress.country}</p>
-                  {order.shippingAddress.phone && (
-                    <p className="mt-2"><span className="font-medium">Phone:</span> {order.shippingAddress.phone}</p>
-                  )}
+                  <p>{order.shippingAddress}</p>
                 </div>
               </div>
 
@@ -170,29 +147,6 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
                       </div>
                     </div>
                   )}
-                  
-                  {order.trackingNumber && (
-                    <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                      <div className="flex-1">
-                        <p className="font-medium">Tracking Number Assigned</p>
-                        <p className="text-sm text-gray-600 font-mono">{order.trackingNumber}</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {order.cancelledAt && (
-                    <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                      <div className="flex-1">
-                        <p className="font-medium">Order Cancelled</p>
-                        <p className="text-sm text-gray-500">{formatDate(order.cancelledAt)}</p>
-                        {order.cancelReason && (
-                          <p className="text-sm text-gray-600">Reason: {order.cancelReason}</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -200,26 +154,10 @@ export default function OrderDetailsModal({ isOpen, onClose, order }: OrderDetai
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Information</h3>
                 <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                  <p><span className="font-medium">Method:</span> {order.paymentMethod}</p>
-                  <p>
-                    <span className="font-medium">Status:</span>
-                    <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${paymentStatusConfig.color}`}>
-                      {paymentStatusConfig.label}
-                    </span>
-                  </p>
-                  <p><span className="font-medium">Amount:</span> {formatCurrency(order.totalAmount)}</p>
+                  <p><span className="font-medium">Status:</span> {statusConfig.label}</p>
+                  <p><span className="font-medium">Amount:</span> {formatCurrency(parseFloat(order.totalAmount.$numberDecimal))}</p>
                 </div>
               </div>
-
-              {/* Notes */}
-              {order.notes && (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Notes</h3>
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <p className="text-sm text-gray-700">{order.notes}</p>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 

@@ -23,6 +23,19 @@ interface ManualPaymentData {
   notes?: string;
 }
 
+interface ManualPaymentDataErrors {
+  userId?: string;
+  userEmail?: string;
+  amount?: string;
+  currency?: string;
+  type?: string;
+  method?: string;
+  description?: string;
+  orderId?: string;
+  donationId?: string;
+  notes?: string;
+}
+
 export default function CreateManualPaymentModal({
   isOpen,
   onClose,
@@ -42,13 +55,11 @@ export default function CreateManualPaymentModal({
     notes: '',
   });
 
-  const [errors, setErrors] = useState<Partial<ManualPaymentData>>({});
-  const [isNewCustomer, setIsNewCustomer] = useState(false);
-
+  const [errors, setErrors] = useState<ManualPaymentDataErrors>({});
   const currencies = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'NGN'];
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<ManualPaymentData> = {};
+    const newErrors: ManualPaymentDataErrors = {};
 
     if (!formData.userEmail.trim()) {
       newErrors.userEmail = 'Customer email is required';
@@ -103,7 +114,6 @@ export default function CreateManualPaymentModal({
         notes: '',
       });
       setErrors({});
-      setIsNewCustomer(false);
       onClose();
     }
   };
@@ -111,8 +121,8 @@ export default function CreateManualPaymentModal({
   const handleInputChange = (field: keyof ManualPaymentData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
+    if (errors[field as keyof ManualPaymentDataErrors]) {
+      setErrors(prev => ({ ...prev, [field as keyof ManualPaymentDataErrors]: undefined }));
     }
   };
 
@@ -185,7 +195,7 @@ export default function CreateManualPaymentModal({
                   <p className="mt-1 text-sm text-red-600">{errors.userEmail}</p>
                 )}
                 <p className="mt-1 text-xs text-gray-500">
-                  If customer doesn't exist, a new customer record will be created
+                  If customer doesn&apos;t exist, a new customer record will be created
                 </p>
               </div>
             </div>
@@ -364,7 +374,7 @@ export default function CreateManualPaymentModal({
                   disabled={isLoading}
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  These notes are for internal use and won't be visible to the customer
+                  These notes are for internal use and won&apos;t be visible to the customer
                 </p>
               </div>
             </div>

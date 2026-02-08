@@ -3,6 +3,13 @@
 import { useState } from 'react';
 import { Payment, RefundPaymentData } from '@/constant/paymentTypes';
 
+interface RefundPaymentDataErrors {
+  amount?: string;
+  reason?: string;
+  notifyCustomer?: string;
+  notes?: string;
+}
+
 interface RefundPaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -25,7 +32,7 @@ export default function RefundPaymentModal({
     notes: '',
   });
 
-  const [errors, setErrors] = useState<Partial<RefundPaymentData>>({});
+  const [errors, setErrors] = useState<RefundPaymentDataErrors>({});
 
   // Reset form when payment changes
   if (payment && formData.amount !== payment.amount) {
@@ -50,7 +57,7 @@ export default function RefundPaymentModal({
   ];
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<RefundPaymentData> = {};
+    const newErrors: RefundPaymentDataErrors = {};
 
     if (!formData.reason.trim()) {
       newErrors.reason = 'Refund reason is required';
@@ -91,8 +98,8 @@ export default function RefundPaymentModal({
   const handleInputChange = (field: keyof RefundPaymentData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
+    if (errors[field as keyof RefundPaymentDataErrors]) {
+      setErrors(prev => ({ ...prev, [field as keyof RefundPaymentDataErrors]: undefined }));
     }
   };
 
@@ -261,7 +268,7 @@ export default function RefundPaymentModal({
                 disabled={isLoading}
               />
               <p className="mt-1 text-xs text-gray-500">
-                These notes are for internal use and won't be visible to the customer
+                These notes are for internal use and won&apos;t be visible to the customer
               </p>
             </div>
 
