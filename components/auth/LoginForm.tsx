@@ -44,6 +44,8 @@ export default function LoginForm() {
         email: form.getFieldValue('email'),
         password: form.getFieldValue('password'),
       });
+      
+      
     } catch (err) {
       // Error handling is done in useAuth hook
     }
@@ -148,7 +150,7 @@ export default function LoginForm() {
 
       <div className="text-center">
         <p className="text-sm text-gray-600">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link
             href="/register"
             className="font-medium text-indigo-600 hover:text-indigo-500"

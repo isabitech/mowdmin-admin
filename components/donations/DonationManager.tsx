@@ -5,13 +5,11 @@ import { donationService } from '@/services/donationService';
 import { 
   Donation,
   DonationFilters,
-  DonationStats,
   CreateDonationData,
   UpdateDonationData
 } from '@/constant/donationTypes';
 import DonationCard from './DonationCard';
 import DonationFiltersPanel from './DonationFiltersPanel';
-import DonationStatsCards from './DonationStatsCards';
 import DonationDetailsModal from './modals/DonationDetailsModal';
 import CreateDonationModal from './modals/CreateDonationModal';
 import EditDonationModal from './modals/EditDonationModal';
@@ -20,7 +18,6 @@ import toast from 'react-hot-toast';
 
 export default function DonationManager() {
   const [donations, setDonations] = useState<Donation[]>([]);
-  const [stats, setStats] = useState<DonationStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDonations, setSelectedDonations] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState<DonationFilters>({});
@@ -50,22 +47,11 @@ export default function DonationManager() {
     }
   }, [filters, currentPage]);
 
-  const loadStats = useCallback(async () => {
-    try {
-      const statsData = await donationService.getDonationStats(filters);
-      setStats(statsData);
-    } catch (error: any) {
-      console.error('Error loading donation stats:', error);
-      // Don't show error toast for stats as it's not critical
-    }
-  }, [filters]);
-
   useEffect(() => {
     if (activeTab === 'donations') {
       loadDonations();
-      loadStats();
     }
-  }, [filters, currentPage, activeTab, loadDonations, loadStats]);
+  }, [filters, currentPage, activeTab, loadDonations]);
 
   const handleDonationSelect = (donationId: string, isSelected: boolean) => {
     const newSelected = new Set(selectedDonations);
@@ -318,9 +304,6 @@ export default function DonationManager() {
 
       {activeTab === 'donations' ? (
         <>
-          {/* Stats Cards */}
-          {stats && <DonationStatsCards stats={stats} />}
-
           {/* Filters */}
           <DonationFiltersPanel
             filters={filters}

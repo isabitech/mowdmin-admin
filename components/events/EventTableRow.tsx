@@ -1,14 +1,29 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import { Event } from '../../constant/eventTypes';
 
 interface EventTableRowProps {
   event: Event;
+  index: number;
   onEdit: () => void;
   onDelete: () => void;
 }
 
-export default function EventTableRow({ event, onEdit, onDelete }: EventTableRowProps) {
+export default function EventTableRow({ event, index, onEdit, onDelete }: EventTableRowProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const getTypeBadge = (type: string) => {
     const typeColors = {
       Crusade: 'bg-red-100 text-red-800',
@@ -18,16 +33,12 @@ export default function EventTableRow({ event, onEdit, onDelete }: EventTableRow
       Prayer: 'bg-yellow-100 text-yellow-800',
       Other: 'bg-gray-100 text-gray-800',
     };
-    
+
     return (
       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${typeColors[type as keyof typeof typeColors] || 'bg-gray-100 text-gray-800'}`}>
         {type}
       </span>
     );
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
   };
 
   const formatDateTime = (dateString: string, timeString: string) => {
@@ -38,7 +49,7 @@ export default function EventTableRow({ event, onEdit, onDelete }: EventTableRow
   const getStatusIndicator = (date: string) => {
     const eventDate = new Date(date);
     const now = new Date();
-    
+
     if (eventDate < now) {
       return <span className="text-gray-500 text-xs">Past</span>;
     } else {
@@ -48,13 +59,16 @@ export default function EventTableRow({ event, onEdit, onDelete }: EventTableRow
 
   return (
     <tr>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        {index}
+      </td>
       <td className="px-6 py-4">
         <div className="flex items-center">
           {event.image && (
             <div className="shrink-0 h-12 w-12 mr-4">
-              <img 
-                className="h-12 w-12 rounded-lg object-cover" 
-                src={event.image} 
+              <img
+                className="h-12 w-12 rounded-lg object-cover"
+                src={event.image}
                 alt={event.title}
               />
             </div>
@@ -77,42 +91,60 @@ export default function EventTableRow({ event, onEdit, onDelete }: EventTableRow
           {formatDateTime(event.date, event.time)}
         </div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-6 py-4 whitespace-nowrap w-px">
         <div className="text-sm text-gray-900">{event.location}</div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-6 py-4 whitespace-nowrap w-px">
         {getTypeBadge(event.type)}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-6 py-4 whitespace-nowrap w-px">
         <div className="text-sm text-gray-900">
           {event.registeredCount || 0}
           {event.capacity && ` / ${event.capacity}`}
         </div>
         {event.capacity && (
           <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-            <div 
-              className="bg-indigo-600 h-2 rounded-full" 
-              style={{ 
-                width: `${Math.min(((event.registeredCount || 0) / event.capacity) * 100, 100)}%` 
+            <div
+              className="bg-indigo-600 h-2 rounded-full"
+              style={{
+                width: `${Math.min(((event.registeredCount || 0) / event.capacity) * 100, 100)}%`
               }}
             ></div>
           </div>
         )}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-        <div className="flex space-x-2">
+      <td className="px-6 py-4 whitespace-nowrap w-px text-sm font-medium">
+        <div className="relative" ref={menuRef}>
           <button
-            onClick={onEdit}
-            className="text-indigo-600 hover:text-indigo-900"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+            aria-label="Actions"
           >
-            Edit
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <circle cx="10" cy="4" r="1.5" />
+              <circle cx="10" cy="10" r="1.5" />
+              <circle cx="10" cy="16" r="1.5" />
+            </svg>
           </button>
-          <button
-            onClick={onDelete}
-            className="text-red-600 hover:text-red-900"
-          >
-            Delete
-          </button>
+
+          {menuOpen && (
+            <div className="absolute right-0 z-10 mt-1 w-36 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+              <div className="py-1 flex flex-col">
+                <button
+                  onClick={() => { onEdit(); setMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-indigo-600 hover:bg-gray-50"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => { onDelete(); setMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </td>
     </tr>

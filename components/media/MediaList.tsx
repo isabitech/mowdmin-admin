@@ -127,10 +127,13 @@ export default function MediaList() {
               </button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[80vh] overflow-y-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      S/N
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Media
                     </th>
@@ -152,10 +155,11 @@ export default function MediaList() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {media.map((mediaItem) => (
+                  {media.map((mediaItem, index) => (
                     <MediaTableRow
                       key={mediaItem._id}
                       media={mediaItem}
+                      index={index + 1}
                       onEdit={() => handleEditMedia(mediaItem)}
                       onDelete={() => handleDeleteMedia(mediaItem._id)}
                     />

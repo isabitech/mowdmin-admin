@@ -22,6 +22,7 @@ export default function EditEventModal({ event, isOpen, onClose, onSave }: EditE
     type: 'Service',
     capacity: undefined,
     isActive: true,
+    id: event?._id,
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -83,7 +84,7 @@ export default function EditEventModal({ event, isOpen, onClose, onSave }: EditE
   if (!isOpen || !event) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div className="fixed inset-0 bg-[#0000006e] bg-opacity-50 overflow-y-auto h-full w-full z-50">
       <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
         <div className="mt-3">
           <div className="flex items-center justify-between mb-4">
@@ -103,7 +104,7 @@ export default function EditEventModal({ event, isOpen, onClose, onSave }: EditE
           )}
           
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-black">
               <div className="md:col-span-2">
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700">
                   Event Title *

@@ -5,7 +5,7 @@ export interface Media {
   description?: string;
   url?: string;
   category_id?: MediaCategory;
-  categoryId?: string;
+  // categoryId?: string;
   youtubeLiveLink?: string;
   isLive: boolean;
   isActive?: boolean;
@@ -27,9 +27,13 @@ export interface MediaCategory {
 export interface CreateMediaRequest {
   title: string;
   description?: string;
-  url: string;
-  categoryId?: string;
-  youtubeLiveLink?: string;
+  category_id?: string;
+  type: string;
+  media_url: string;
+  author?: string;
+  duration?: string;
+  is_downloadable?: boolean;
+  thumbnail?: string;
   isLive?: boolean;
 }
 

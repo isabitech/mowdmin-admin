@@ -1,5 +1,5 @@
+import Sidebar from '@/layout/Sidebar';
 import ProtectedRoute from '../../components/auth/ProtectedRoute';
-import Sidebar from '../../components/layout/Sidebar';
 
 export default function DashboardLayout({
   children,

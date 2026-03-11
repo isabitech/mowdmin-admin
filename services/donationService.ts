@@ -5,7 +5,6 @@ import {
   DonationCampaign,
   Donor,
   DonationFilters,
-  DonationStats,
   DonationResponse,
   CampaignResponse,
   CreateDonationData,
@@ -127,34 +126,6 @@ export const donationService = {
     } catch (error: any) {
       if (error.response?.status === 500) {
         throw new Error('Server error occurred while deleting donation. Please try again later.');
-      }
-      throw error;
-    }
-  },
-
-  // Donation Statistics
-  async getDonationStats(filters: DonationFilters = {}): Promise<DonationStats> {
-    try {
-      const params = new URLSearchParams();
-      
-      if (filters.dateFrom) {
-        params.append('dateFrom', filters.dateFrom);
-      }
-      if (filters.dateTo) {
-        params.append('dateTo', filters.dateTo);
-      }
-      if (filters.type?.length) {
-        params.append('type', filters.type.join(','));
-      }
-      if (filters.campaignId) {
-        params.append('campaignId', filters.campaignId);
-      }
-      
-      const response = await api.get(`${endpoints.donations.stats}?${params.toString()}`);
-      return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 500) {
-        throw new Error('Server error occurred while fetching donation statistics. Please try again later.');
       }
       throw error;
     }

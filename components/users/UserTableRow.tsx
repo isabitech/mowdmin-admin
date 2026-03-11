@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import { AdminUser } from '../../constant/types';
 
 interface UserTableRowProps {
@@ -10,6 +11,18 @@ interface UserTableRowProps {
 }
 
 export default function UserTableRow({ user, onPromote, onEdit, onTriggerOtp }: UserTableRowProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   const getStatusBadge = (status: string) => {
     const statusColors = {
       active: 'bg-green-100 text-green-800',
@@ -68,25 +81,43 @@ export default function UserTableRow({ user, onPromote, onEdit, onTriggerOtp }: 
         {formatDate(user.lastLogin)}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-        <div className="flex space-x-2">
+        <div className="relative" ref={menuRef}>
           <button
-            onClick={onEdit}
-            className="text-indigo-600 hover:text-indigo-900"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+            aria-label="Actions"
           >
-            Edit
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <circle cx="10" cy="4" r="1.5" />
+              <circle cx="10" cy="10" r="1.5" />
+              <circle cx="10" cy="16" r="1.5" />
+            </svg>
           </button>
-          <button
-            onClick={onPromote}
-            className="text-purple-600 hover:text-purple-900"
-          >
-            {user.isAdmin ? 'Demote' : 'Promote'}
-          </button>
-          <button
-            onClick={onTriggerOtp}
-            className="text-yellow-600 hover:text-yellow-900"
-          >
-            Reset Password
-          </button>
+
+          {menuOpen && (
+            <div className="absolute right-0 z-10 mt-1 w-44 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+              <div className="py-1 flex flex-col">
+                <button
+                  onClick={() => { onEdit(); setMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-indigo-600 hover:bg-gray-50"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => { onPromote(); setMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-purple-600 hover:bg-gray-50"
+                >
+                  {user.isAdmin ? 'Demote' : 'Promote'}
+                </button>
+                <button
+                  onClick={() => { onTriggerOtp(); setMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-yellow-600 hover:bg-gray-50"
+                >
+                  Reset Password
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </td>
     </tr>

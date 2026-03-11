@@ -5,11 +5,12 @@ import { Media } from '@/constant/mediaTypes';
 
 interface MediaTableRowProps {
   media: Media;
+  index: number;
   onEdit: () => void;
   onDelete: () => void;
 }
 
-export default function MediaTableRow({ media, onEdit, onDelete }: MediaTableRowProps) {
+export default function MediaTableRow({ media, index, onEdit, onDelete }: MediaTableRowProps) {
   const getTypeBadge = (isLive: boolean) => {
     if (isLive) {
       return (
@@ -46,6 +47,9 @@ export default function MediaTableRow({ media, onEdit, onDelete }: MediaTableRow
 
   return (
     <tr>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        {index}
+      </td>
       <td className="px-6 py-4">
         <div className="flex items-center">
           <div className="shrink-0 h-12 w-20 mr-4">

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import { MediaCategory } from '@/constant/mediaTypes';
 
 interface CategoryTableRowProps {
@@ -9,6 +10,18 @@ interface CategoryTableRowProps {
 }
 
 export default function CategoryTableRow({ category, onEdit, onDelete }: CategoryTableRowProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
   };
@@ -58,20 +71,38 @@ export default function CategoryTableRow({ category, onEdit, onDelete }: Categor
           {formatDate(category.createdAt)}
         </div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-        <div className="flex space-x-2">
+      <td className="px-6 py-4 whitespace-nowrap w-px text-sm font-medium">
+        <div className="relative" ref={menuRef}>
           <button
-            onClick={onEdit}
-            className="text-indigo-600 hover:text-indigo-900 transition-colors"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+            aria-label="Actions"
           >
-            Edit
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <circle cx="10" cy="4" r="1.5" />
+              <circle cx="10" cy="10" r="1.5" />
+              <circle cx="10" cy="16" r="1.5" />
+            </svg>
           </button>
-          <button
-            onClick={onDelete}
-            className="text-red-600 hover:text-red-900 transition-colors"
-          >
-            Delete
-          </button>
+
+          {menuOpen && (
+            <div className="absolute right-0 z-10 mt-1 w-36 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+              <div className="py-1 flex flex-col">
+                <button
+                  onClick={() => { onEdit(); setMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-indigo-600 hover:bg-gray-50"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => { onDelete(); setMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </td>
     </tr>

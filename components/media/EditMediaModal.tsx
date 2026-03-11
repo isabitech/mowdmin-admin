@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Media, UpdateMediaRequest } from '@/constant/mediaTypes';
+import { Media, UpdateMediaRequest, MediaCategory } from '@/constant/mediaTypes';
+import { mediaCategoryService } from '@/services/mediaCategoryService';
 
 interface EditMediaModalProps {
   media: Media | null;
@@ -14,29 +15,51 @@ export default function EditMediaModal({ media, isOpen, onClose, onSave }: EditM
   const [formData, setFormData] = useState<Partial<UpdateMediaRequest>>({
     title: '',
     description: '',
-    url: '',
-    categoryId: '',
-    youtubeLiveLink: '',
+    type: 'video',
+    media_url: '',
+    category_id: '',
+    author: '',
+    duration: '',
+    is_downloadable: false,
+    thumbnail: '',
     isLive: false,
     isActive: true,
   });
+  const [categories, setCategories] = useState<MediaCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const data = await mediaCategoryService.getCategories();
+        setCategories(data);
+      } catch (err) {
+        console.error('Failed to fetch categories:', err);
+      }
+    };
+
+    if (isOpen) {
+      fetchCategories();
+    }
+
     if (media) {
       setFormData({
         title: media.title,
         description: media.description || '',
-        url: media.url || '',
-        categoryId: media.category_id?._id || '',
-        youtubeLiveLink: media.youtubeLiveLink || '',
+        type: 'video', // Default type since it's not in Media interface yet
+        media_url: media.url || '',
+        category_id: media.category_id?._id || '',
+        author: '', // Not in Media interface yet
+        duration: '', // Not in Media interface yet
+        is_downloadable: false, // Not in Media interface yet
+        thumbnail: media.thumbnail || '',
         isLive: media.isLive,
         isActive: media.isActive || true,
       });
       setError('');
     }
-  }, [media]);
+  }, [media, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +96,7 @@ export default function EditMediaModal({ media, isOpen, onClose, onSave }: EditM
   if (!isOpen || !media) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div className="fixed inset-0 bg-[#00000093] bg-opacity-50 overflow-y-auto h-full w-full z-50">
       <div className="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
         <div className="mt-3">
           <div className="flex items-center justify-between mb-4">
@@ -93,7 +116,7 @@ export default function EditMediaModal({ media, isOpen, onClose, onSave }: EditM
           )}
           
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-4 text-black">
               <div>
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700">
                   Title *
@@ -126,62 +149,114 @@ export default function EditMediaModal({ media, isOpen, onClose, onSave }: EditM
               </div>
 
               <div>
-                <label htmlFor="url" className="block text-sm font-medium text-gray-700">
-                  Video URL *
+                <label htmlFor="type" className="block text-sm font-medium text-gray-700">
+                  Media Type *
+                </label>
+                <select
+                  id="type"
+                  name="type"
+                  required
+                  value={formData.type || 'video'}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  disabled={loading}
+                >
+                  <option value="video">Video</option>
+                  <option value="audio">Audio</option>
+                  <option value="live">Live Stream</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="media_url" className="block text-sm font-medium text-gray-700">
+                  Media URL *
                 </label>
                 <input
-                  id="url"
-                  name="url"
+                  id="media_url"
+                  name="media_url"
                   type="url"
                   required
-                  value={formData.url || ''}
+                  value={formData.media_url || ''}
                   onChange={handleInputChange}
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                   disabled={loading}
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  YouTube, Vimeo, or direct video file URLs supported
+                  Direct media file URLs, YouTube, Vimeo, or other platform URLs
                 </p>
               </div>
 
               <div>
-                <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="author" className="block text-sm font-medium text-gray-700">
+                  Author
+                </label>
+                <input
+                  id="author"
+                  name="author"
+                  type="text"
+                  value={formData.author || ''}
+                  onChange={handleInputChange}
+                  placeholder="Pastor John"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  disabled={loading}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="duration" className="block text-sm font-medium text-gray-700">
+                  Duration
+                </label>
+                <input
+                  id="duration"
+                  name="duration"
+                  type="text"
+                  value={formData.duration || ''}
+                  onChange={handleInputChange}
+                  placeholder="35:00"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  disabled={loading}
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Format: MM:SS or HH:MM:SS
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="thumbnail" className="block text-sm font-medium text-gray-700">
+                  Thumbnail URL
+                </label>
+                <input
+                  id="thumbnail"
+                  name="thumbnail"
+                  type="url"
+                  value={formData.thumbnail || ''}
+                  onChange={handleInputChange}
+                  placeholder="https://example.com/thumbnail.jpg"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  disabled={loading}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="category_id" className="block text-sm font-medium text-gray-700">
                   Category (Optional)
                 </label>
                 <select
-                  id="categoryId"
-                  name="categoryId"
-                  value={formData.categoryId || ''}
+                  id="category_id"
+                  name="category_id"
+                  value={formData.category_id || ''}
                   onChange={handleInputChange}
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                   disabled={loading}
                 >
                   <option value="">Select Category</option>
-                  <option value="sermons">Sermons</option>
-                  <option value="worship">Worship</option>
-                  <option value="testimonies">Testimonies</option>
-                  <option value="events">Events</option>
-                  <option value="teachings">Teachings</option>
+                  {categories.map((category) => (
+                    <option key={category._id} value={category._id}>
+                      {category.name}
+                    </option>
+                  ))}
                 </select>
               </div>
-
-              {isYouTubeUrl(formData.url || '') && (
-                <div>
-                  <label htmlFor="youtubeLiveLink" className="block text-sm font-medium text-gray-700">
-                    YouTube Live Link (Optional)
-                  </label>
-                  <input
-                    id="youtubeLiveLink"
-                    name="youtubeLiveLink"
-                    type="url"
-                    value={formData.youtubeLiveLink || ''}
-                    onChange={handleInputChange}
-                    placeholder="https://www.youtube.com/watch?v=... (for live streams)"
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    disabled={loading}
-                  />
-                </div>
-              )}
 
               <div className="space-y-2">
                 <div className="flex items-center">
@@ -201,6 +276,21 @@ export default function EditMediaModal({ media, isOpen, onClose, onSave }: EditM
 
                 <div className="flex items-center">
                   <input
+                    id="is_downloadable"
+                    name="is_downloadable"
+                    type="checkbox"
+                    checked={formData.is_downloadable || false}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    disabled={loading}
+                  />
+                  <label htmlFor="is_downloadable" className="ml-2 block text-sm text-gray-900">
+                    Allow downloads
+                  </label>
+                </div>
+
+                <div className="flex items-center">
+                  <input
                     id="isActive"
                     name="isActive"
                     type="checkbox"
@@ -215,13 +305,17 @@ export default function EditMediaModal({ media, isOpen, onClose, onSave }: EditM
                 </div>
               </div>
 
-              {formData.url && validateUrl(formData.url) && (
+              {formData.media_url && validateUrl(formData.media_url) && (
                 <div className="bg-gray-50 p-4 rounded-md">
                   <h4 className="text-sm font-medium text-gray-900 mb-2">Preview:</h4>
                   <div className="text-sm text-gray-600">
                     <p><strong>Title:</strong> {formData.title || 'Untitled'}</p>
-                    <p><strong>URL:</strong> {formData.url}</p>
-                    <p><strong>Type:</strong> {formData.isLive ? 'Live Stream' : 'Video'}</p>
+                    <p><strong>Type:</strong> {formData.type}</p>
+                    <p><strong>URL:</strong> {formData.media_url}</p>
+                    <p><strong>Author:</strong> {formData.author || 'N/A'}</p>
+                    <p><strong>Duration:</strong> {formData.duration || 'N/A'}</p>
+                    <p><strong>Live Stream:</strong> {formData.isLive ? 'Yes' : 'No'}</p>
+                    <p><strong>Downloadable:</strong> {formData.is_downloadable ? 'Yes' : 'No'}</p>
                     <p><strong>Status:</strong> {formData.isActive ? 'Active' : 'Inactive'}</p>
                   </div>
                 </div>

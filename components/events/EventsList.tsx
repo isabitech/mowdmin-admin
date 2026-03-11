@@ -52,7 +52,7 @@ export default function EventsList() {
     if (!editingEvent) return;
     
     try {
-      await eventService.updateEvent(editingEvent.id, eventData);
+      await eventService.updateEvent(editingEvent._id, eventData);
       setIsEditModalOpen(false);
       setEditingEvent(null);
       await fetchEvents(); // Refresh the list
@@ -132,6 +132,9 @@ export default function EventsList() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      S/N
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Event
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -152,12 +155,13 @@ export default function EventsList() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {events.map((event) => (
+                  {events.map((event, index) => (
                     <EventTableRow
-                      key={event.id}
+                      key={event._id}
                       event={event}
+                      index={index + 1}
                       onEdit={() => handleEditEvent(event)}
-                      onDelete={() => handleDeleteEvent(event.id)}
+                      onDelete={() => handleDeleteEvent(event._id)}
                     />
                   ))}
                 </tbody>

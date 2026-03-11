@@ -177,12 +177,12 @@ export default function DonationCard({
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-3">
                 <span className="text-sm font-medium text-gray-900">#{donation.donationNumber}</span>
-                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusConfig.color}`}>
-                  {statusConfig.label}
+                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusConfig?.color}`}>
+                  {statusConfig?.label}
                 </span>
-                <span className={`inline-flex items-center px-2 py-1 text-xs rounded-full ${typeConfig.color}`}>
-                  <span className="mr-1">{typeConfig.icon}</span>
-                  {typeConfig.label}
+                <span className={`inline-flex items-center px-2 py-1 text-xs rounded-full ${typeConfig?.color}`}>
+                  <span className="mr-1">{typeConfig?.icon}</span>
+                  {typeConfig?.label}
                 </span>
                 {donation.isTaxDeductible && (
                   <span className="inline-flex items-center px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
