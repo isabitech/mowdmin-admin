@@ -49,8 +49,7 @@ export default function GroupCard({
   if (viewMode === 'grid') {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-        <div className="relative">
-          {group.imageUrl && (
+        {group.imageUrl && (
           <div className="relative h-48 w-full">
             <Image
               src={group.imageUrl}
@@ -58,34 +57,55 @@ export default function GroupCard({
               fill
               className="object-cover rounded-t-lg"
             />
+            <div className="absolute top-3 left-3 z-10">
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={(e) => onSelect(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shadow-sm"
+              />
+            </div>
+            <div className="absolute top-3 right-3 z-10">
+              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full shadow-sm ${statusConfig?.color}`}>
+                {statusConfig?.label}
+              </span>
+            </div>
           </div>
-          )}
-          <div className="absolute top-3 left-3">
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={(e) => onSelect(e.target.checked)}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-          </div>
-          <div className="absolute top-3 right-3">
-            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusConfig?.color}`}>
-              {statusConfig?.label}
-            </span>
-          </div>
-        </div>
+        )}
 
         <div className="p-4">
+          {!group.imageUrl && (
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={(e) => onSelect(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className={`inline-flex items-center px-2 py-1 text-xs rounded-full ${typeConfig?.color}`}>
+                  <span className="mr-1">{typeConfig?.icon}</span>
+                  {typeConfig?.label}
+                </span>
+              </div>
+              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusConfig?.color}`}>
+                {statusConfig?.label}
+              </span>
+            </div>
+          )}
+
           <div className="space-y-3">
             <div>
               <div className="flex items-center justify-between mb-1">
                 <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
                   {group.name}
                 </h3>
-                <span className={`inline-flex items-center px-2 py-1 text-xs rounded-full ${typeConfig?.color}`}>
-                  <span className="mr-1">{typeConfig?.icon}</span>
-                  {typeConfig?.label}
-                </span>
+                {group.imageUrl && (
+                  <span className={`inline-flex items-center px-2 py-1 text-xs rounded-full ${typeConfig?.color}`}>
+                    <span className="mr-1">{typeConfig?.icon}</span>
+                    {typeConfig?.label}
+                  </span>
+                )}
               </div>
               <p className="text-sm text-gray-600 line-clamp-2">{group.description}</p>
             </div>
@@ -155,10 +175,10 @@ export default function GroupCard({
             </div>
           </div>
 
-          <div className="flex items-center justify-between mt-4 pt-3 border-t">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-4 pt-3 border-t">
             <button
               onClick={() => onView(group)}
-              className="text-sm font-medium text-blue-600 hover:text-blue-500"
+              className="text-sm font-medium text-blue-600 hover:text-blue-500 w-full sm:w-auto text-left"
             >
               View Details
             </button>
@@ -186,14 +206,16 @@ export default function GroupCard({
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
       <div className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={(e) => onSelect(e.target.checked)}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center space-x-4">
+            <label className="flex items-center cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={(e) => onSelect(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer transition-all"
+              />
+            </label>
             
             {group.imageUrl && (
             <div className="relative w-16 h-16">
@@ -218,7 +240,7 @@ export default function GroupCard({
                 </span>
               </div>
               <p className="text-sm text-gray-600 line-clamp-1 mb-2">{group.description}</p>
-              <div className="flex items-center space-x-4 text-sm text-gray-500">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
                 <span>
                   <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />

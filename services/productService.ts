@@ -1,10 +1,13 @@
 import api from './authService';
 import { endpoints } from '@/constant/endpoints';
-import { 
-  Product, 
-  CreateProductData, 
-  UpdateProductData, 
-  ProductsResponse, 
+import {
+  Product,
+  CreateProductRequest as CreateProductData,
+  UpdateProductRequest as UpdateProductData
+} from '@/services/productSchemas';
+// Keeping ProductFilters and others from old file if they are still needed
+import {
+  ProductsResponse,
   ProductResponse,
   ProductFilters,
   ProductStats
@@ -12,13 +15,31 @@ import {
 
 class ProductService {
   // Get all products
-  async getProducts(filters?: ProductFilters): Promise<ProductsResponse> {
+  async getProducts(filters?: {
+    page?: number;
+    limit?: number;
+    category?: string;
+    search?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    status?: string;
+  }): Promise<{
+    data: Product[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     try {
       const params = new URLSearchParams();
-      
+
       if (filters) {
+        if (filters.page) params.append('page', String(filters.page));
+        if (filters.limit) params.append('limit', String(filters.limit));
         if (filters.category) params.append('category', filters.category);
-        if (filters.search) params.append('search', filters.search);
+        if (filters.search) {
+          params.append('search', filters.search);
+          params.append('q', filters.search);
+        }
         if (filters.minPrice !== undefined) params.append('minPrice', filters.minPrice.toString());
         if (filters.maxPrice !== undefined) params.append('maxPrice', filters.maxPrice.toString());
         if (filters.status && filters.status !== 'all') {
@@ -33,11 +54,41 @@ class ProductService {
         }
       }
 
-      const queryString = params.toString();
-      const url = queryString ? `${endpoints.products.list}?${queryString}` : endpoints.products.list;
-      
-      const response = await api.get<ProductsResponse>(url);
-      return response.data;
+      const response = await api.get(`${endpoints.products.list}?${params.toString()}`);
+
+      // ✅ Cast to any to handle different response shapes
+      const apiData = response.data as any;
+      let products: Product[] = [];
+
+      if (Array.isArray(apiData.data)) {
+        products = apiData.data;
+      } else if (Array.isArray(apiData)) {
+        products = apiData;
+      }
+
+      // Determine total count
+      const limit = 10;
+      const total =
+        apiData?.total ??
+        apiData?.totalCount ??
+        apiData?.pagination?.total ??
+        apiData?.data?.total ??
+        (products.length === (filters?.limit || limit) ? (filters?.page || 1) * (filters?.limit || limit) + 1 : products.length);
+
+      // ✅ Transform price for the UI
+      const transformedProducts = products.map((p: any) => ({
+        ...p,
+        price: typeof p.price === 'object' && p.price?.$numberDecimal
+          ? parseFloat(p.price.$numberDecimal)
+          : (typeof p.price === 'number' ? p.price : 0)
+      }));
+
+      return {
+        data: transformedProducts,
+        total,
+        page: filters?.page || 1,
+        limit: filters?.limit || 10,
+      };
     } catch (error: any) {
       if (error.response?.status === 500) {
         throw new Error('Server error occurred while fetching products. Please try again later.');
@@ -65,7 +116,7 @@ class ProductService {
   async createProduct(productData: CreateProductData): Promise<ProductResponse> {
     try {
       const response = await api.post<ProductResponse>(
-        endpoints.products.create, 
+        endpoints.products.create,
         productData
       );
       return response.data;
@@ -150,7 +201,7 @@ class ProductService {
 
   // Bulk operations
   async bulkUpdateProducts(
-    productIds: string[], 
+    productIds: string[],
     updates: Partial<CreateProductData>
   ): Promise<{ message: string; updatedCount: number }> {
     const response = await api.patch<{ message: string; updatedCount: number }>(

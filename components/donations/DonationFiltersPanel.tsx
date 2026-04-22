@@ -93,20 +93,7 @@ export default function DonationFiltersPanel({
 
       {isExpanded && (
         <div className="p-4 space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Search */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Search
-              </label>
-              <input
-                type="text"
-                value={localFilters.search || ''}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Donor name, email, donation number..."
-              />
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
             {/* Date Range */}
             <div>
@@ -117,7 +104,7 @@ export default function DonationFiltersPanel({
                 type="date"
                 value={localFilters.dateFrom || ''}
                 onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-black shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
 
@@ -129,7 +116,7 @@ export default function DonationFiltersPanel({
                 type="date"
                 value={localFilters.dateTo || ''}
                 onChange={(e) => handleFilterChange('dateTo', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-black shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
 
@@ -142,7 +129,7 @@ export default function DonationFiltersPanel({
                 type="text"
                 value={localFilters.campaignId || ''}
                 onChange={(e) => handleFilterChange('campaignId', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-black shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Filter by specific campaign..."
               />
             </div>
@@ -159,7 +146,7 @@ export default function DonationFiltersPanel({
                   type="number"
                   value={localFilters.amountMin || ''}
                   onChange={(e) => handleFilterChange('amountMin', parseFloat(e.target.value) || undefined)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-black shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Min amount"
                   min="0"
                   step="0.01"
@@ -169,7 +156,7 @@ export default function DonationFiltersPanel({
                   type="number"
                   value={localFilters.amountMax || ''}
                   onChange={(e) => handleFilterChange('amountMax', parseFloat(e.target.value) || undefined)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-black shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Max amount"
                   min="0"
                   step="0.01"
@@ -293,7 +280,7 @@ export default function DonationFiltersPanel({
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end space-x-3 pt-4 border-t">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t">
             <button
               onClick={handleClearFilters}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"

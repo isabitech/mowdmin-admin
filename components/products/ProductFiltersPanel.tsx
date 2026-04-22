@@ -85,23 +85,12 @@ export default function ProductFiltersPanel({
       {/* Quick Filters (Always Visible) */}
       <div className="px-4 py-3">
         <div className="flex flex-wrap items-center gap-3">
-          {/* Search */}
-          <div className="flex-1 min-w-64">
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={localFilters.search || ''}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
-              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-
           {/* Status Filter */}
           <div className="min-w-36">
             <select
               value={localFilters.status || 'all'}
               onChange={(e) => handleFilterChange('status', e.target.value as ProductStatus)}
-              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md text-black focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
             >
               {statusOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -116,7 +105,7 @@ export default function ProductFiltersPanel({
             <select
               value={localFilters.category || ''}
               onChange={(e) => handleFilterChange('category', e.target.value)}
-              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md text-black focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">All Categories</option>
               {PRODUCT_CATEGORIES.map((category) => (
@@ -151,7 +140,7 @@ export default function ProductFiltersPanel({
                 step="0.01"
                 value={localFilters.minPrice || ''}
                 onChange={(e) => handleFilterChange('minPrice', parseFloat(e.target.value) || undefined)}
-                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md text-black focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="0.00"
               />
             </div>
@@ -166,7 +155,7 @@ export default function ProductFiltersPanel({
                 step="0.01"
                 value={localFilters.maxPrice || ''}
                 onChange={(e) => handleFilterChange('maxPrice', parseFloat(e.target.value) || undefined)}
-                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md text-black focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="999.99"
               />
             </div>

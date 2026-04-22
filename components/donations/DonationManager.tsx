@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { donationService } from '@/services/donationService';
-import { 
+import {
   Donation,
   DonationFilters,
   CreateDonationData,
@@ -23,9 +23,25 @@ export default function DonationManager() {
   const [filters, setFilters] = useState<DonationFilters>({});
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // reset page on search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [activeTab, setActiveTab] = useState<'donations' | 'campaigns'>('donations');
-  
+
   // Modal states
   const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -36,7 +52,7 @@ export default function DonationManager() {
   const loadDonations = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await donationService.getDonations(filters, currentPage, 20);
+      const response = await donationService.getDonations({ ...filters, search: debouncedSearch }, currentPage, 20);
       setDonations(response.data || []);
       setTotalPages(response.pagination?.totalPages || 1);
     } catch (error: any) {
@@ -45,7 +61,7 @@ export default function DonationManager() {
     } finally {
       setIsLoading(false);
     }
-  }, [filters, currentPage]);
+  }, [filters, debouncedSearch, currentPage]);
 
   useEffect(() => {
     if (activeTab === 'donations') {
@@ -88,7 +104,7 @@ export default function DonationManager() {
       toast.success('Donation created successfully');
       setIsCreateModalOpen(false);
       loadDonations();
-      loadStats();
+      // loadStats();
     } catch (error: any) {
       console.error('Error creating donation:', error);
       toast.error(error.message || 'Failed to create donation');
@@ -107,7 +123,7 @@ export default function DonationManager() {
       setIsEditModalOpen(false);
       setSelectedDonation(null);
       loadDonations();
-      loadStats();
+      // loadStats();
     } catch (error: any) {
       console.error('Error updating donation:', error);
       toast.error(error.message || 'Failed to update donation');
@@ -123,7 +139,7 @@ export default function DonationManager() {
       await donationService.deleteDonation(donationId);
       toast.success('Donation deleted successfully');
       loadDonations();
-      loadStats();
+      // loadStats();
     } catch (error: any) {
       console.error('Error deleting donation:', error);
       toast.error(error.message || 'Failed to delete donation');
@@ -135,7 +151,7 @@ export default function DonationManager() {
       await donationService.refundDonation(donationId, reason);
       toast.success('Donation refunded successfully');
       loadDonations();
-      loadStats();
+      // loadStats();
     } catch (error: any) {
       console.error('Error refunding donation:', error);
       toast.error(error.message || 'Failed to refund donation');
@@ -146,12 +162,12 @@ export default function DonationManager() {
     try {
       const receipt = await donationService.generateTaxReceipt(donationId);
       toast.success('Tax receipt generated successfully');
-      
+
       // Open receipt in new window
       if (receipt?.receiptUrl) {
         window.open(receipt.receiptUrl, '_blank');
       }
-      
+
       loadDonations();
     } catch (error: any) {
       console.error('Error generating tax receipt:', error);
@@ -202,7 +218,7 @@ export default function DonationManager() {
       }
       setSelectedDonations(new Set());
       loadDonations();
-      loadStats();
+      // loadStats();
     } catch (error: any) {
       console.error('Error bulk updating donations:', error);
       toast.error(error.message || 'Failed to update donations');
@@ -250,34 +266,41 @@ export default function DonationManager() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 p-8">
+      <div className="flex flex-col lg:flex-row justify-between py-6 items-start lg:items-center gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Donations Management</h1>
+          <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Donations Management</h1>
           <p className="mt-1 text-sm text-gray-600">
             Manage donations, campaigns, and donor relationships
           </p>
         </div>
-        <div className="flex space-x-4">
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
           {activeTab === 'donations' && (
             <>
+              <input
+                type="text"
+                placeholder="Search donations..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full sm:w-64 px-4 py-2 border border-gray-300 rounded-lg text-sm text-black focus:ring-blue-500 bg-white"
+              />
               <button
                 onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                className="w-full sm:w-auto bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm"
               >
                 {viewMode === 'grid' ? 'List View' : 'Grid View'}
               </button>
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg text-sm font-bold transition-colors shadow-sm"
               >
-                Add Donation
+                + Add Donation
               </button>
               <button
                 onClick={handleExportDonations}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-sm"
               >
-                Export Donations
+                Export
               </button>
             </>
           )}
@@ -289,13 +312,13 @@ export default function DonationManager() {
         <nav className="-mb-px flex space-x-8">
           <button
             onClick={() => setActiveTab('donations')}
-            className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'donations'             ? 'border-blue-500 text-blue-600': 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+            className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'donations' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
           >
             Donations
           </button>
           <button
             onClick={() => setActiveTab('campaigns')}
-            className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'campaigns'? 'border-blue-500 text-blue-600': 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+            className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'campaigns' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
           >
             Campaigns
           </button>
@@ -360,7 +383,7 @@ export default function DonationManager() {
                     {donations.length} donation{donations.length > 1 ? 's' : ''}
                   </span>
                 </div>
-                
+
                 {/* Pagination */}
                 {totalPages > 1 && (
                   <div className="flex items-center space-x-2">
@@ -388,7 +411,7 @@ export default function DonationManager() {
 
             {donations.length > 0 ? (
               <div className={
-                viewMode === 'grid' 
+                viewMode === 'grid'
                   ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6'
                   : 'space-y-4'
               }>
@@ -425,8 +448,8 @@ export default function DonationManager() {
                 </svg>
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No donations found</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  {Object.keys(filters).length > 0 ? 
-                    'Try adjusting your filters or search criteria.' : 
+                  {Object.keys(filters).length > 0 ?
+                    'Try adjusting your filters or search criteria.' :
                     'Donations will appear here when people make contributions.'}
                 </p>
               </div>
@@ -495,7 +518,7 @@ export default function DonationManager() {
           setIsEditModalOpen(false);
           setSelectedDonation(null);
           loadDonations();
-          loadStats();
+          // loadStats();
         }}
       />
     </div>

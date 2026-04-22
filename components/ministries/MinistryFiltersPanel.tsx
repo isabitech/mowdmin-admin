@@ -71,10 +71,10 @@ export default function MinistryFiltersPanel({
               onClick={() => setIsExpanded(!isExpanded)}
               className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <svg 
-                className={`w-5 h-5 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
-                fill="none" 
-                stroke="currentColor" 
+              <svg
+                className={`w-5 h-5 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -212,7 +212,7 @@ export default function MinistryFiltersPanel({
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
             <button
               onClick={handleClear}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"

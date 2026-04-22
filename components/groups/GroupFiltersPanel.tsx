@@ -176,23 +176,23 @@ export default function GroupFiltersPanel({
             {/* Group Properties */}
             <div className="space-y-4">
               <div>
-                <label className="flex items-center space-x-2">
+                <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={localFilters.isPublic === true}
                     onChange={(e) => handleFilterChange('isPublic', e.target.checked ? true : undefined)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-1"
                   />
                   <span className="text-sm font-medium text-gray-700">Public groups only</span>
                 </label>
               </div>
               <div>
-                <label className="flex items-center space-x-2">
+                <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={localFilters.hasOpenSpots === true}
                     onChange={(e) => handleFilterChange('hasOpenSpots', e.target.checked ? true : undefined)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-1"
                   />
                   <span className="text-sm font-medium text-gray-700">Groups with open spots</span>
                 </label>
@@ -207,12 +207,12 @@ export default function GroupFiltersPanel({
             </label>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {Object.entries(GROUP_STATUS_CONFIG).map(([status, config]) => (
-                <label key={status} className="flex items-center space-x-2">
+                <label key={status} className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={(localFilters.status || []).includes(status as GroupStatus)}
                     onChange={(e) => handleArrayFilterChange('status', status, e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-1"
                   />
                   <span className={`text-xs px-2 py-1 rounded-full ${config.color}`}>
                     {config.label}
@@ -229,12 +229,12 @@ export default function GroupFiltersPanel({
             </label>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
               {Object.entries(GROUP_TYPE_CONFIG).map(([type, config]) => (
-                <label key={type} className="flex items-center space-x-2">
+                <label key={type} className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={(localFilters.type || []).includes(type as GroupType)}
                     onChange={(e) => handleArrayFilterChange('type', type, e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-1"
                   />
                   <span className={`text-xs px-2 py-1 rounded-full ${config.color}`}>
                     {config.icon} {config.label}
@@ -251,12 +251,12 @@ export default function GroupFiltersPanel({
             </label>
             <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
               {Object.entries(MEETING_DAY_CONFIG).map(([day, config]) => (
-                <label key={day} className="flex items-center space-x-2">
+                <label key={day} className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={(localFilters.meetingDay || []).includes(day as MeetingDay)}
                     onChange={(e) => handleArrayFilterChange('meetingDay', day, e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-1"
                   />
                   <span className="text-sm">
                     {config.label}
@@ -284,7 +284,7 @@ export default function GroupFiltersPanel({
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end space-x-3 pt-4 border-t">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t">
             <button
               onClick={handleClearFilters}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"

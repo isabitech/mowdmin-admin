@@ -1,14 +1,14 @@
 import axios from 'axios';
-import { 
-  LoginRequest, 
-  LoginResponse, 
-  RegisterRequest, 
-  ForgotPasswordRequest, 
+import {
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+  ForgotPasswordRequest,
   ResetPasswordRequest,
   VerifyOtpRequest,
   ResendOtpRequest,
   ChangePasswordRequest,
-  ApiResponse 
+  ApiResponse,
 } from '../constant/types';
 import { endpoints } from '../constant/endpoints';
 
@@ -22,21 +22,16 @@ const api = axios.create({
   },
 });
 
-// Request interceptor to add auth token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+// Attach token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+  return config;
+});
 
-// Response interceptor for error handling
+// Handle auth errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -50,30 +45,36 @@ api.interceptors.response.use(
 );
 
 export const authService = {
-  // Login
+  /* ---------------- AUTH ---------------- */
+
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    const response = await api.post<ApiResponse<LoginResponse>>(endpoints.auth.login, credentials);
+    const response = await api.post<ApiResponse<LoginResponse>>(
+      endpoints.auth.login,
+      credentials
+    );
+
     const { token, user } = response.data.data || {};
-    
+
     if (token) {
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
     }
-    
+
     if (!response.data.data) {
       throw new Error('Login failed: No data received');
     }
-    
+
     return response.data.data;
   },
 
-  // Register
   async register(userData: RegisterRequest): Promise<ApiResponse> {
-    const response = await api.post<ApiResponse>(endpoints.auth.register, userData);
+    const response = await api.post<ApiResponse>(
+      endpoints.auth.register,
+      userData
+    );
     return response.data;
   },
 
-  // Logout
   async logout(): Promise<void> {
     try {
       await api.post(endpoints.auth.logout);
@@ -83,73 +84,143 @@ export const authService = {
     }
   },
 
-  // Forgot Password
   async forgotPassword(data: ForgotPasswordRequest): Promise<ApiResponse> {
-    const response = await api.post<ApiResponse>(endpoints.auth.forgotPassword, data);
+    const response = await api.post<ApiResponse>(
+      endpoints.auth.forgotPassword,
+      data
+    );
     return response.data;
   },
 
-  // Reset Password
   async resetPassword(data: ResetPasswordRequest): Promise<ApiResponse> {
-    const response = await api.post<ApiResponse>(endpoints.auth.resetPassword, data);
+    const response = await api.post<ApiResponse>(
+      endpoints.auth.resetPassword,
+      data
+    );
     return response.data;
   },
 
-  // Verify OTP
   async verifyOtp(data: VerifyOtpRequest): Promise<ApiResponse> {
-    const response = await api.post<ApiResponse>(endpoints.auth.verifyOtp, data);
+    const response = await api.post<ApiResponse>(
+      endpoints.auth.verifyOtp,
+      data
+    );
     return response.data;
   },
 
-  // Resend OTP
   async resendOtp(data: ResendOtpRequest): Promise<ApiResponse> {
-    const response = await api.post<ApiResponse>(endpoints.auth.resendOtp, data);
+    const response = await api.post<ApiResponse>(
+      endpoints.auth.resendOtp,
+      data
+    );
     return response.data;
   },
 
-  // Change Password
   async changePassword(data: ChangePasswordRequest): Promise<ApiResponse> {
-    const response = await api.post<ApiResponse>(endpoints.auth.changePassword, data);
+    const response = await api.post<ApiResponse>(
+      endpoints.auth.changePassword,
+      data
+    );
     return response.data;
   },
 
-  // Check if user is authenticated
-  isAuthenticated(): boolean {
-    const token = localStorage.getItem('token');
-    return !!token;
-  },
+  /* ---------------- ADMIN USERS (FIXED SEARCH) ---------------- */
 
-  // Get current user
-  getCurrentUser(): any {
-    const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
-  },
+  async getAdminUsers(filters?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }): Promise<{
+    data: any[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const params = new URLSearchParams();
 
-  // Get token
-  getToken(): string | null {
-    return localStorage.getItem('token');
-  },
+    if (filters?.page) params.append('page', String(filters.page));
+    if (filters?.limit) params.append('limit', String(filters.limit));
 
-  // Admin User Management
-  async getAdminUsers(): Promise<any[]> {
-    const response = await api.get<ApiResponse<any[]>>(endpoints.auth.adminUsers);
-    return response.data.data || [];
+    if (filters?.search?.trim()) {
+      const searchTerm = filters.search.trim();
+      params.append('search', searchTerm);
+      params.append('q', searchTerm); // Alias requested by user
+    }
+
+    const response = await api.get(
+      `${endpoints.auth.adminUsers}?${params.toString()}`
+    );
+
+    // ✅ THIS is the missing part (apiData was undefined before)
+    const apiData = response.data;
+
+    // ---------------- USERS ----------------
+    let users: any[] = [];
+
+    if (Array.isArray(apiData.data)) {
+      users = apiData.data;
+    } else if (Array.isArray(apiData)) {
+      users = apiData;
+    } else if (Array.isArray(apiData?.data?.data)) {
+      users = apiData.data.data;
+    }
+
+    // ---------------- TOTAL (FIXED PROPERLY with fallback) ----------------
+    const total =
+      apiData?.total ??
+      apiData?.totalUsers ??
+      apiData?.totalCount ??
+      apiData?.pagination?.total ??
+      apiData?.data?.total ??
+      (users.length === (filters?.limit || 10) ? (filters?.page || 1) * (filters?.limit || 10) + 1 : users.length);
+
+    return {
+      data: users,
+      total,
+      page: filters?.page || 1,
+      limit: filters?.limit || 10,
+    };
   },
+  /* ---------------- USER ACTIONS ---------------- */
 
   async promoteUser(userId: string): Promise<ApiResponse> {
-    const response = await api.patch<ApiResponse>(endpoints.auth.promoteUser(userId));
+    const response = await api.patch(
+      endpoints.auth.promoteUser(userId)
+    );
     return response.data;
   },
 
   async updateUser(userId: string, userData: any): Promise<ApiResponse> {
-    const response = await api.put<ApiResponse>(endpoints.auth.updateUser(userId), userData);
+    const response = await api.put(
+      endpoints.auth.updateUser(userId),
+      userData
+    );
     return response.data;
   },
 
   async triggerUserOtp(userId: string): Promise<ApiResponse> {
-    const response = await api.post<ApiResponse>(endpoints.auth.triggerOtp(userId));
+    const response = await api.post(
+      endpoints.auth.triggerOtp(userId)
+    );
     return response.data;
-  }
+  },
+
+  /* ---------------- HELPERS ---------------- */
+
+  getToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('token');
+  },
+
+  getCurrentUser(): any {
+    if (typeof window === 'undefined') return null;
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+  },
+
+  isAuthenticated(): boolean {
+    return !!this.getToken();
+  },
 };
 
 export default api;

@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { paymentService } from '@/services/paymentService';
-import { 
-  Payment, 
-  PaymentFilters, 
+import {
+  Payment,
+  PaymentFilters,
   PaymentStats,
   RefundPaymentData,
   ProcessPaymentData
@@ -27,7 +27,7 @@ export default function PaymentManager() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-  
+
   // Modal states
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -244,11 +244,11 @@ export default function PaymentManager() {
     );
   }
 
-  const pendingPaymentsCount = selectedPayments.size > 0 ? 
+  const pendingPaymentsCount = selectedPayments.size > 0 ?
     payments.filter(p => selectedPayments.has(p.id) && p.status === 'pending').length : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Payments Management</h1>
@@ -265,13 +265,13 @@ export default function PaymentManager() {
           </button>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
           >
             Manual Payment
           </button>
           <button
             onClick={handleExportPayments}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
           >
             Export Payments
           </button>
@@ -336,7 +336,7 @@ export default function PaymentManager() {
                 {payments.length} payment{payments.length > 1 ? 's' : ''}
               </span>
             </div>
-            
+
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center space-x-2">
@@ -364,7 +364,7 @@ export default function PaymentManager() {
 
         {payments.length > 0 ? (
           <div className={
-            viewMode === 'grid' 
+            viewMode === 'grid'
               ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6'
               : 'space-y-4'
           }>
@@ -401,8 +401,8 @@ export default function PaymentManager() {
             </svg>
             <h3 className="mt-2 text-sm font-medium text-gray-900">No payments found</h3>
             <p className="mt-1 text-sm text-gray-500">
-              {Object.keys(filters).length > 0 ? 
-                'Try adjusting your filters or search criteria.' : 
+              {Object.keys(filters).length > 0 ?
+                'Try adjusting your filters or search criteria.' :
                 'Payment transactions will appear here when customers make purchases.'
               }
             </p>

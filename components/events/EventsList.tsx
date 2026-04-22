@@ -1,46 +1,33 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { eventService } from '@/services/eventService';
+import { useState } from 'react';
+import { useEvents, useDeleteEvent, useUpdateEvent, useCreateEvent } from '@/hooks/useEvents';
 import { Event } from '@/constant/eventTypes';
 import EventTableRow from './EventTableRow';
 import CreateEventModal from './CreateEventModal';
 import EditEventModal from './EditEventModal';
 
-
 export default function EventsList() {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const fetchEvents = async () => {
-    try {
-      setLoading(true);
-      const data = await eventService.getEvents();
-      setEvents(data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch events');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // TanStack Query & Mutations
+  const { data: response, isLoading, error: queryError } = useEvents({ page, limit });
+  const createMutation = useCreateEvent();
+  const updateMutation = useUpdateEvent();
+  const deleteMutation = useDeleteEvent();
 
-  useEffect(() => {
-    fetchEvents();
-  }, []);
+  const events = response?.data ?? [];
+  const total = response?.total ?? 0;
+  const hasMore = page * limit < total;
 
   const handleCreateEvent = async (eventData: any) => {
-    try {
-      await eventService.createEvent(eventData);
-      setIsCreateModalOpen(false);
-      await fetchEvents(); // Refresh the list
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create event');
-      throw err; // Re-throw to let the modal handle the error
-    }
+    await createMutation.mutateAsync(eventData);
+    setIsCreateModalOpen(false);
   };
 
   const handleEditEvent = (event: Event) => {
@@ -50,135 +37,131 @@ export default function EventsList() {
 
   const handleUpdateEvent = async (eventData: any) => {
     if (!editingEvent) return;
-    
-    try {
-      await eventService.updateEvent(editingEvent._id, eventData);
-      setIsEditModalOpen(false);
-      setEditingEvent(null);
-      await fetchEvents(); // Refresh the list
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update event');
-      throw err; // Re-throw to let the modal handle the error
-    }
+    await updateMutation.mutateAsync({ id: editingEvent._id, data: eventData });
+    setIsEditModalOpen(false);
+    setEditingEvent(null);
   };
 
   const handleDeleteEvent = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this event?')) {
-      return;
-    }
-
-    try {
-      await eventService.deleteEvent(id);
-      await fetchEvents(); // Refresh the list
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete event');
+    if (window.confirm('Are you sure you want to delete this event?')) {
+      await deleteMutation.mutateAsync(id);
     }
   };
 
-  if (loading) {
+  /* ---------------- Loading State ---------------- */
+
+  if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      <div className="p-8">
+        <p className="text-gray-500 animate-pulse">Loading events...</p>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-bold text-gray-900">Events Management</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Create and manage church events, crusades, baptisms, and conferences.
+    <div className="p-4 space-y-6">
+      {/* Header */}
+      <div className="sm:flex sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 leading-tight">Events Management</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Manage church events, crusades, and conferences.
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
-          >
-            Create Event
-          </button>
-        </div>
+        <button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="mt-4 sm:mt-0 inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition-colors"
+        >
+          Create Event
+        </button>
       </div>
 
-      {error && (
-        <div className="mt-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
-          {error}
-          <button 
-            onClick={() => setError('')}
-            className="ml-2 text-red-400 hover:text-red-600"
-          >
-            ×
-          </button>
+      {/* Error Message */}
+      {(queryError || createMutation.error || updateMutation.error || deleteMutation.error) && (
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded shadow-sm text-sm text-red-700">
+          {(queryError as any)?.response?.data?.message || 'An error occurred while processing events.'}
         </div>
       )}
 
-      <div className="mt-8 bg-white shadow rounded-lg overflow-hidden">
-        <div className="px-4 py-5 sm:p-6">
+      {/* Table Section */}
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
           {events.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500 mb-4">No events found</p>
+            <div className="py-24 text-center">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-50 text-gray-400 mb-4">
+                📅
+              </div>
+              <h3 className="text-sm font-medium text-gray-900">No events found</h3>
+              <p className="mt-1 text-sm text-gray-500">Get started by creating a new event.</p>
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+                className="mt-4 text-sm font-semibold text-indigo-600 hover:text-indigo-500"
               >
-                Create Your First Event
+                + New Event
               </button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      S/N
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Event
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date & Time
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Location
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Registrations
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {events.map((event, index) => (
-                    <EventTableRow
-                      key={event._id}
-                      event={event}
-                      index={index + 1}
-                      onEdit={() => handleEditEvent(event)}
-                      onDelete={() => handleDeleteEvent(event._id)}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-tight">
+                <tr>
+                  <th className="px-6 py-3 text-left font-semibold">S/N</th>
+                  <th className="px-6 py-3 text-left font-semibold">Event Details</th>
+                  <th className="px-6 py-3 text-left font-semibold">Schedule</th>
+                  <th className="px-6 py-3 text-left font-semibold">Location</th>
+                  <th className="px-6 py-3 text-left font-semibold">Type</th>
+                  <th className="px-6 py-3 text-left font-semibold">Register</th>
+                  <th className="px-6 py-3 text-right font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-100">
+                {events.map((event, index) => (
+                  <EventTableRow
+                    key={event._id}
+                    event={event}
+                    index={(page - 1) * limit + index + 1}
+                    onEdit={() => handleEditEvent(event)}
+                    onDelete={() => handleDeleteEvent(event._id)}
+                  />
+                ))}
+              </tbody>
+            </table>
           )}
+        </div>
+
+        {/* Smart Pagination */}
+        <div className="px-6 py-4 bg-gray-50 border-t flex items-center justify-center gap-6">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="inline-flex items-center px-4 py-2 border border-gray-200 rounded-md bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors shadow-sm"
+          >
+            ← Previous
+          </button>
+
+          <span className="text-sm text-gray-600 font-medium">
+            Page {page}
+          </span>
+
+          <button
+            onClick={() => {
+              if (!hasMore) return;
+              setPage((p: number) => p + 1);
+            }}
+            disabled={!hasMore}
+            className="inline-flex items-center px-4 py-2 border border-gray-200 rounded-md bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors shadow-sm"
+          >
+            Next →
+          </button>
         </div>
       </div>
 
-      {/* Create Event Modal */}
+      {/* Modals */}
       <CreateEventModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSave={handleCreateEvent}
       />
 
-      {/* Edit Event Modal */}
       <EditEventModal
         event={editingEvent}
         isOpen={isEditModalOpen}
