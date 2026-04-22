@@ -1,145 +1,164 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { authService } from '@/services/authService';
-import { AdminUser } from '@/constant/types';
+import {
+  useUsers,
+  useUpdateUser,
+  usePromoteUser,
+  useTriggerOtp,
+} from '@/hooks/useUsers';
+import { AdminUserSchema, UpdateUserSchema } from '@/services/userSchemas';
 import UserTableRow from '@/components/users/UserTableRow';
 import EditUserModal from '@/components/users/EditUserModal';
 
 export default function UsersList() {
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [editingUser, setEditingUser] = useState<AdminUserSchema | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      const data = await authService.getAdminUsers();
-      setUsers(data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch users');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const limit = 10;
 
+  /* ---------------- debounce ---------------- */
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
 
-  const handlePromoteUser = async (userId: string) => {
-    try {
-      await authService.promoteUser(userId);
-      await fetchUsers(); // Refresh the list
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update user privileges');
-    }
-  };
+    return () => clearTimeout(timer);
+  }, [search]);
 
-  const handleTriggerOtp = async (userId: string) => {
-    try {
-      await authService.triggerUserOtp(userId);
-      alert('Password reset OTP sent to user\'s email');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to trigger OTP');
-    }
-  };
+  /* ---------------- reset page on search ---------------- */
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
 
-  const handleEditUser = (user: AdminUser) => {
+  /* ---------------- fetch ---------------- */
+  const { data: response, isLoading } = useUsers({
+    page,
+    limit,
+    search: debouncedSearch,
+  });
+
+  const users = response?.data ?? [];
+  const total = response?.total ?? 0;
+  const hasMore = page * limit < total;
+
+  const updateUserMutation = useUpdateUser();
+  const promoteUserMutation = usePromoteUser();
+  const triggerOtpMutation = useTriggerOtp();
+
+  /* ---------------- handlers ---------------- */
+  const handleEditUser = (user: AdminUserSchema) => {
     setEditingUser(user);
     setIsEditModalOpen(true);
   };
 
-  const handleUpdateUser = async (userData: any) => {
+  const handleUpdateUser = async (userData: UpdateUserSchema) => {
     if (!editingUser) return;
-    
-    try {
-      await authService.updateUser(editingUser.id, userData);
-      setIsEditModalOpen(false);
-      setEditingUser(null);
-      await fetchUsers(); // Refresh the list
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update user');
-    }
+
+    await updateUserMutation.mutateAsync({
+      userId: editingUser._id,
+      data: userData,
+    });
+
+    setIsEditModalOpen(false);
+    setEditingUser(null);
   };
 
-  if (loading) {
+  /* ---------------- loading ---------------- */
+  if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      <div className="p-8">
+        <p className="text-gray-500">Loading users...</p>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Manage all users, promote admin privileges, and handle user accounts.
-          </p>
-        </div>
+    <div className="p-8 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <h1 className="text-2xl font-semibold text-gray-900">
+          Users Management
+        </h1>
+
+        <input
+          type="text"
+          placeholder="Search users..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
       </div>
 
-      {error && (
-        <div className="mt-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
-          {error}
-          <button 
-            onClick={() => setError('')}
-            className="ml-2 text-red-400 hover:text-red-600"
+      {/* Table */}
+      <div className="bg-white border rounded-lg overflow-hidden">
+        {users.length === 0 ? (
+          <div className="py-20 text-center">
+            <p className="text-gray-500">No users found</p>
+            <button
+              onClick={() => setSearch('')}
+              className="mt-3 text-sm text-gray-700"
+            >
+              Clear search
+            </button>
+          </div>
+        ) : (
+          <table className="w-full">
+            <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
+              <tr>
+                <th className="px-4 py-3 text-left">Name</th>
+                <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-left">Role</th>
+                <th className="px-4 py-3 text-left">Last Login</th>
+                <th className="px-4 py-3 text-left">Action</th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y">
+              {users.map((user) => (
+                <UserTableRow
+                  key={user._id}
+                  user={user}
+                  onPromote={() => promoteUserMutation.mutate(user._id)}
+                  onEdit={() => handleEditUser(user)}
+                  onTriggerOtp={() => triggerOtpMutation.mutate(user._id)}
+                />
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        {/* Pagination (SMART NEXT/PREV ONLY) */}
+        <div className="flex items-center justify-center gap-4 p-4 border-t bg-gray-50">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-4 py-2 text-gray-900 border border-gray-300 rounded-md bg-white text-sm hover:bg-gray-100 disabled:opacity-50"
           >
-            ×
+            ← Previous
+          </button>
+
+          <span className="text-sm text-gray-600">
+            Page {page}
+          </span>
+
+          <button
+            onClick={() => {
+              if (!hasMore) return;
+              setPage((p) => p + 1);
+            }}
+            disabled={!hasMore}
+            className="px-4 py-2 border text-gray-900 border-gray-300 rounded-md bg-white text-sm hover:bg-gray-100 disabled:opacity-50"
+          >
+            Next →
           </button>
         </div>
-      )}
-
-      <div className="mt-8 bg-white shadow rounded-lg overflow-hidden">
-        <div className="px-4 py-5 sm:p-6">
-          {users.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No users found</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Role
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Last Login
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {users.map((user) => (
-                    <UserTableRow
-                      key={user.id}
-                      user={user}
-                      onPromote={() => handlePromoteUser(user.id)}
-                      onEdit={() => handleEditUser(user)}
-                      onTriggerOtp={() => handleTriggerOtp(user.id)}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
       </div>
 
-      {/* Edit User Modal */}
+      {/* Modal */}
       <EditUserModal
         user={editingUser}
         isOpen={isEditModalOpen}

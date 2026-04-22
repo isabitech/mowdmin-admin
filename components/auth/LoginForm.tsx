@@ -10,7 +10,7 @@ import { validationRules } from '../../utils/validation';
 export default function LoginForm() {
   const { login, loading, error } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const form = useForm<LoginRequest>({
     email: '',
     password: '',
@@ -18,11 +18,7 @@ export default function LoginForm() {
 
   const handleInputChange = (field: keyof LoginRequest, value: string) => {
     form.setField(field, value);
-    
-    // Real-time validation on blur/change
-    if (form.isFieldTouched(field)) {
-      form.validateField(field, validationRules.login[field]);
-    }
+    if (form.isFieldTouched(field)) form.validateField(field, validationRules.login[field]);
   };
 
   const handleBlur = (field: keyof LoginRequest) => {
@@ -32,27 +28,20 @@ export default function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const isValid = form.validateForm(validationRules.login);
-    
-    if (!isValid) {
-      return;
-    }
+    if (loading) return;
 
-    try {
-      await login({
-        email: form.getFieldValue('email'),
-        password: form.getFieldValue('password'),
-      });
-      
-      
-    } catch (err) {
-      // Error handling is done in useAuth hook
-    }
+    const isValid = form.validateForm(validationRules.login);
+    if (!isValid) return;
+
+    await login({
+      email: form.getFieldValue('email'),
+      password: form.getFieldValue('password'),
+    });
   };
 
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} noValidate className="space-y-6">
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
           {error}
@@ -71,11 +60,10 @@ export default function LoginForm() {
           value={form.getFieldValue('email')}
           onChange={(e) => handleInputChange('email', e.target.value)}
           onBlur={() => handleBlur('email')}
-          className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-            form.getFieldError('email') && form.isFieldTouched('email')
-              ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-              : 'border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'
-          } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:z-10 sm:text-sm`}
+          className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${form.getFieldError('email') && form.isFieldTouched('email')
+            ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+            : 'border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'
+            } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:z-10 sm:text-sm`}
           placeholder="Enter your email"
           disabled={loading}
         />
@@ -97,11 +85,10 @@ export default function LoginForm() {
             value={form.getFieldValue('password')}
             onChange={(e) => handleInputChange('password', e.target.value)}
             onBlur={() => handleBlur('password')}
-            className={`appearance-none relative block w-full px-3 py-2 pr-10 border ${
-              form.getFieldError('password') && form.isFieldTouched('password')
-                ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                : 'border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'
-            } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:z-10 sm:text-sm`}
+            className={`appearance-none relative block w-full px-3 py-2 pr-10 border ${form.getFieldError('password') && form.isFieldTouched('password')
+              ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+              : 'border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'
+              } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:z-10 sm:text-sm`}
             placeholder="Enter your password"
             disabled={loading}
           />

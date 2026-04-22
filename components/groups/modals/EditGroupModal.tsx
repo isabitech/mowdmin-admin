@@ -1,9 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Group, UpdateGroupData, GroupType, GroupStatus } from '@/constant/groupTypes';
+import ModalWrapper from '../../ModalWrapper';
+import {
+  Group,
+  UpdateGroupData,
+  GroupType,
+  GroupStatus,
+} from '@/constant/groupTypes';
 
-interface EditGroupModalProps {
+interface Props {
   isOpen: boolean;
   onClose: () => void;
   group: Group;
@@ -11,151 +17,211 @@ interface EditGroupModalProps {
   isSubmitting: boolean;
 }
 
-export default function EditGroupModal({ isOpen, onClose, group, onSuccess, isSubmitting }: EditGroupModalProps) {
+export default function EditGroupModal({
+  isOpen,
+  onClose,
+  group,
+  onSuccess,
+  isSubmitting,
+}: Props) {
   const [formData, setFormData] = useState<UpdateGroupData>({
-    name: group.name,
-    description: group.description,
-    type: group.type,
-    status: group.status,
-    isPublic: group.isPublic,
-    maxMembers: group.maxMembers,
-    meetingSchedule: group.meetingSchedule,
-    contactInfo: group.contactInfo,
-    tags: group.tags,
+    name: '',
+    description: '',
+    type: 'small_group',
+    status: 'active',
+    isPublic: false,
   });
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && group) {
       setFormData({
-        name: group.name,
-        description: group.description,
+        name: group.name || '',
+        description: group.description || '',
         type: group.type,
         status: group.status,
-        isPublic: group.isPublic,
+        isPublic: group.isPublic ?? false,
         maxMembers: group.maxMembers,
         meetingSchedule: group.meetingSchedule,
         contactInfo: group.contactInfo,
         tags: group.tags,
       });
     }
-  }, [isOpen, group]);
+  }, [group, isOpen]);
+
+  const updateField = (key: keyof UpdateGroupData, value: any) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSuccess(formData);
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={onClose}></div>
-        <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full sm:p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-medium text-gray-900">Edit Group - {group.name}</h3>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+    <ModalWrapper isOpen={isOpen} onClose={onClose}>
+      <div className="w-full max-w-2xl bg-white rounded-xl shadow-xl flex flex-col max-h-[90vh]">
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Group Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name || ''}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
-                <select
-                  value={formData.type}
-                  onChange={(e) => setFormData({...formData, type: e.target.value as GroupType})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="small_group">Small Group</option>
-                  <option value="ministry_team">Ministry Team</option>
-                  <option value="bible_study">Bible Study</option>
-                  <option value="youth_group">Youth Group</option>
-                  <option value="committee">Committee</option>
-                </select>
-              </div>
-            </div>
+        {/* Header (Fixed) */}
+        <div className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0">
+          <h3 className="text-lg text-black font-bold">Edit Group</h3>
+          <button onClick={onClose}>✕</button>
+        </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+        {/* Scrollable Body */}
+        <form
+          onSubmit={handleSubmit}
+          className="flex-1 overflow-y-auto p-6"
+        >
+          <div className="space-y-6">
+
+            {/* Basic Info */}
+            <section>
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">
+                Basic Information
+              </h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                    Group Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={(e) => updateField('name', e.target.value)}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-gray-900"
+                    placeholder="Enter group name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                    Type *
+                  </label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) =>
+                      updateField('type', e.target.value as GroupType)
+                    }
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-gray-900"
+                  >
+                    <option value="small_group">Small Group</option>
+                    <option value="ministry_team">Ministry Team</option>
+                    <option value="bible_study">Bible Study</option>
+                    <option value="youth_group">Youth Group</option>
+                    <option value="committee">Committee</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                    Status
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) =>
+                      updateField('status', e.target.value as GroupStatus)
+                    }
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-gray-900"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="on_hold">On Hold</option>
+                    <option value="planning">Planning</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+              </div>
+            </section>
+
+            {/* Description */}
+            <section>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                Description *
+              </label>
               <textarea
                 required
                 rows={3}
-                value={formData.description || ''}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                value={formData.description}
+                onChange={(e) =>
+                  updateField('description', e.target.value)
+                }
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-gray-900"
+                placeholder="Tell us about this group..."
               />
-            </div>
+            </section>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({...formData, status: e.target.value as GroupStatus})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="on_hold">On Hold</option>
-                  <option value="planning">Planning</option>
-                  <option value="completed">Completed</option>
-                </select>
+            {/* Settings */}
+            <section>
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">
+                Settings & Limits
+              </h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                    Max Members
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.maxMembers || ''}
+                    onChange={(e) =>
+                      updateField(
+                        'maxMembers',
+                        e.target.value
+                          ? parseInt(e.target.value)
+                          : undefined
+                      )
+                    }
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-gray-900"
+                    placeholder="No limit"
+                  />
+                </div>
+
+                <div className="flex items-center pt-8">
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.isPublic}
+                      onChange={(e) =>
+                        updateField('isPublic', e.target.checked)
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer-checked:bg-blue-600 relative after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                    <span className="ml-3 text-sm font-semibold text-gray-700">
+                      Make this group public
+                    </span>
+                  </label>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Max Members</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={formData.maxMembers || ''}
-                  onChange={(e) => setFormData({...formData, maxMembers: e.target.value ? parseInt(e.target.value) : undefined})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
+            </section>
+          </div>
+        </form>
 
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                checked={formData.isPublic}
-                onChange={(e) => setFormData({...formData, isPublic: e.target.checked})}
-                className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <label className="text-sm text-gray-700">Public Group</label>
-            </div>
+        {/* Footer (Fixed) */}
+        <div className="px-6 py-4 border-t flex justify-end space-x-3 flex-shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-6 py-2.5 text-sm font-bold text-gray-600 hover:text-gray-900 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg transition-all"
+          >
+            Cancel
+          </button>
 
-            <div className="flex justify-end space-x-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-md"
-              >
-                {isSubmitting ? 'Updating...' : 'Update Group'}
-              </button>
-            </div>
-          </form>
+          <button
+            type="submit"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="px-8 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200 disabled:opacity-50 disabled:shadow-none rounded-lg transition-all"
+          >
+            {isSubmitting ? 'Saving Changes...' : 'Save Group Changes'}
+          </button>
         </div>
+
       </div>
-    </div>
+    </ModalWrapper>
   );
 }

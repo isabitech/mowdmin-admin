@@ -124,10 +124,10 @@ export default function DonationCard({
             )}
           </div>
 
-          <div className="flex items-center justify-between pt-3 border-t">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-3 border-t">
             <button
               onClick={() => onView(donation)}
-              className="text-xs font-medium text-blue-600 hover:text-blue-500"
+              className="text-xs font-medium text-blue-600 hover:text-blue-500 w-full sm:w-auto text-left"
             >
               View Details
             </button>
@@ -165,8 +165,8 @@ export default function DonationCard({
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
       <div className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <input
               type="checkbox"
               checked={isSelected}
@@ -190,7 +190,7 @@ export default function DonationCard({
                   </span>
                 )}
               </div>
-              <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
+              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
                 <span>{donation.isAnonymous ? 'Anonymous Donor' : donation.donor.name}</span>
                 {!donation.isAnonymous && (
                   <>

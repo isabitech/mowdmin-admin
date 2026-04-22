@@ -5,9 +5,54 @@ import { ApiResponse } from '../constant/types';
 
 export const eventService = {
   // Get all events
-  async getEvents(): Promise<Event[]> {
-    const response = await api.get<ApiResponse<Event[]>>(endpoints.events.list);
-    return response.data.data || [];
+  async getEvents(filters?: {
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    data: Event[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const params = new URLSearchParams();
+    if (filters?.page) params.append('page', String(filters.page));
+    if (filters?.limit) params.append('limit', String(filters.limit));
+    if ((filters as any)?.search) {
+      const q = (filters as any).search;
+      params.append('search', q);
+      params.append('q', q);
+    }
+
+    const response = await api.get<ApiResponse<Event[]>>(
+      `${endpoints.events.list}?${params.toString()}`
+    );
+
+    // ✅ THIS is the missing part (apiData was undefined before)
+    const apiData = response.data as any;
+
+    // ---------------- USERS ----------------
+    let events: Event[] = [];
+
+    if (Array.isArray(apiData.data)) {
+      events = apiData.data;
+    } else if (Array.isArray(apiData)) {
+      events = apiData;
+    }
+
+    // ---------------- TOTAL (FIXED PROPERLY) ----------------
+    const total =
+      apiData?.total ??
+      apiData?.totalCount ??
+      apiData?.pagination?.total ??
+      apiData?.data?.total ??
+      (events.length === (filters?.limit || 10) ? (filters?.page || 1) * (filters?.limit || 10) + 1 : events.length);
+
+    return {
+      data: events,
+      total,
+      page: filters?.page || 1,
+      limit: filters?.limit || 10,
+    };
   },
 
   // Get single event

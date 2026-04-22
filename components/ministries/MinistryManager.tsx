@@ -13,14 +13,13 @@ import MinistryFiltersPanel from './MinistryFiltersPanel';
 import CreateMinistryModal from './modals/CreateMinistryModal';
 import EditMinistryModal from './modals/EditMinistryModal';
 import MinistryDetailsModal from './modals/MinistryDetailsModal';
+import DeleteMinistryModal from './modals/DeleteMinistryModal';
 import toast from 'react-hot-toast';
 
 export default function MinistryManager() {
   const [ministries, setMinistries] = useState<Ministry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMinistries, setSelectedMinistries] = useState<Set<string>>(new Set());
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filters, setFilters] = useState<MinistryFilters>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,21 +28,22 @@ export default function MinistryManager() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedMinistry, setSelectedMinistry] = useState<Ministry | null>(null);
 
   const loadMinistries = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await ministryService.getMinistries(currentPage, 20, filters);
+      // Load all ministries for robust selection/management
+      const response = await ministryService.getMinistries(1, 1000, filters);
       setMinistries(response.data || []);
-      setTotalPages(response.pagination?.totalPages || 1);
     } catch (error) {
       console.error('Error loading ministries:', error);
       toast.error('Failed to load ministries');
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, filters]);
+  }, [filters]);
 
   useEffect(() => {
     loadMinistries();
@@ -82,15 +82,25 @@ export default function MinistryManager() {
     }
   };
 
-  const handleDeleteMinistry = async (ministryId: string) => {
-    if (!confirm('Are you sure you want to delete this ministry? This action cannot be undone.')) {
-      return;
+  const handleDeleteMinistry = (ministryId: string) => {
+    const ministry = ministries.find(m => (m.id || (m as any)._id) === ministryId);
+    if (ministry) {
+      setSelectedMinistry(ministry);
+      setIsDeleteModalOpen(true);
     }
+  };
+
+  const confirmDeleteMinistry = async () => {
+    if (!selectedMinistry) return;
+    const ministryId = selectedMinistry.id || (selectedMinistry as any)._id;
 
     try {
+      setIsSubmitting(true);
       await ministryService.deleteMinistry(ministryId);
       toast.success('Ministry deleted successfully');
-      setMinistries(prev => prev.filter(m => m.id !== ministryId));
+      setMinistries(prev => prev.filter(m => (m.id || (m as any)._id) !== ministryId));
+      setSelectedMinistry(null);
+      setIsDeleteModalOpen(false);
       setSelectedMinistries(prev => {
         const newSet = new Set(prev);
         newSet.delete(ministryId);
@@ -99,6 +109,8 @@ export default function MinistryManager() {
     } catch (error) {
       console.error('Error deleting ministry:', error);
       toast.error('Failed to delete ministry');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -113,13 +125,16 @@ export default function MinistryManager() {
     }
 
     try {
+      setIsSubmitting(true);
       await ministryService.bulkDeleteMinistries(Array.from(selectedMinistries));
       toast.success(`${selectedMinistries.size} ministries deleted successfully`);
-      setMinistries(prev => prev.filter(m => !selectedMinistries.has(m.id)));
+      setMinistries(prev => prev.filter(m => !selectedMinistries.has(m.id || (m as any)._id)));
       setSelectedMinistries(new Set());
     } catch (error) {
       console.error('Error bulk deleting ministries:', error);
       toast.error('Failed to delete selected ministries');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -147,7 +162,7 @@ export default function MinistryManager() {
 
   const handleSelectAll = (isSelected: boolean) => {
     if (isSelected) {
-      setSelectedMinistries(new Set(ministries.map(m => m.id)));
+      setSelectedMinistries(new Set(ministries.map(m => m.id || (m as any)._id).filter(Boolean)));
     } else {
       setSelectedMinistries(new Set());
     }
@@ -155,18 +170,16 @@ export default function MinistryManager() {
 
   const handleApplyFilters = (newFilters: MinistryFilters) => {
     setFilters(newFilters);
-    setCurrentPage(1);
   };
 
   const handleClearFilters = () => {
     setFilters({});
-    setCurrentPage(1);
   };
 
   if (isLoading && ministries.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -174,7 +187,7 @@ export default function MinistryManager() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Ministry Management</h1>
           <p className="mt-1 text-sm text-gray-600">
@@ -185,14 +198,14 @@ export default function MinistryManager() {
           {selectedMinistries.size > 0 && (
             <button
               onClick={handleBulkDelete}
-              className="px-3 py-2 text-sm font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-md transition-colors"
+              className="px-4 py-2 text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 rounded-xl transition-all"
             >
               Delete Selected ({selectedMinistries.size})
             </button>
           )}
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            className="px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200 rounded-xl transition-all"
           >
             Create Ministry
           </button>
@@ -207,8 +220,8 @@ export default function MinistryManager() {
       />
 
       {/* View Controls */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center space-x-2">
             <input
               type="checkbox"
@@ -227,9 +240,8 @@ export default function MinistryManager() {
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setViewMode('grid')}
-            className={`p-2 rounded-md transition-colors ${
-              viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600'
-            }`}
+            className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-indigo-100 text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+              }`}
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -237,9 +249,8 @@ export default function MinistryManager() {
           </button>
           <button
             onClick={() => setViewMode('list')}
-            className={`p-2 rounded-md transition-colors ${
-              viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600'
-            }`}
+            className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-indigo-100 text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+              }`}
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
@@ -250,22 +261,25 @@ export default function MinistryManager() {
 
       {/* Ministries List/Grid */}
       {ministries.length > 0 ? (
-        <div className={viewMode === 'grid' 
-          ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6' 
+        <div className={viewMode === 'grid'
+          ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6'
           : 'space-y-4'
         }>
-          {ministries.map((ministry) => (
-            <MinistryCard
-              key={ministry.id}
-              ministry={ministry}
-              viewMode={viewMode}
-              isSelected={selectedMinistries.has(ministry.id)}
-              onSelect={(isSelected) => handleSelectMinistry(ministry.id, isSelected)}
-              onView={handleViewMinistry}
-              onEdit={handleEditMinistry}
-              onDelete={() => handleDeleteMinistry(ministry.id)}
-            />
-          ))}
+          {ministries.map((ministry) => {
+            const ministryId = ministry.id || (ministry as any)._id;
+            return (
+              <MinistryCard
+                key={ministryId}
+                ministry={ministry}
+                viewMode={viewMode}
+                isSelected={selectedMinistries.has(ministryId)}
+                onSelect={(isSelected) => handleSelectMinistry(ministryId, isSelected)}
+                onView={handleViewMinistry}
+                onEdit={handleEditMinistry}
+                onDelete={() => handleDeleteMinistry(ministryId)}
+              />
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-12">
@@ -277,34 +291,15 @@ export default function MinistryManager() {
           <div className="mt-6">
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center px-6 py-2.5 border border-transparent shadow-lg shadow-indigo-100 text-sm font-bold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 transition-all"
             >
-              Create Ministry
+              Create Your First Ministry
             </button>
           </div>
         </div>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center space-x-2">
-          <button
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-            className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded transition-colors"
-          >
-            Previous
-          </button>
-          <span className="text-sm text-gray-600">Page {currentPage} of {totalPages}</span>
-          <button
-            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage === totalPages}
-            className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded transition-colors"
-          >
-            Next
-          </button>
-        </div>
-      )}
+
 
       {/* Modals */}
       {isCreateModalOpen && (
@@ -338,7 +333,20 @@ export default function MinistryManager() {
           }}
           ministry={selectedMinistry}
           onEdit={handleEditMinistry}
-          onDelete={() => handleDeleteMinistry(selectedMinistry.id)}
+          onDelete={() => handleDeleteMinistry(selectedMinistry.id || (selectedMinistry as any)._id)}
+        />
+      )}
+
+      {isDeleteModalOpen && selectedMinistry && (
+        <DeleteMinistryModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => {
+            setIsDeleteModalOpen(false);
+            setSelectedMinistry(null);
+          }}
+          onConfirm={confirmDeleteMinistry}
+          ministry={selectedMinistry}
+          isSubmitting={isSubmitting}
         />
       )}
     </div>

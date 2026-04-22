@@ -9,6 +9,11 @@ import {
   UpdateOrderStatusData,
   CancelOrderData
 } from '@/constant/orderTypes';
+import { 
+  OrdersResponseSchema,
+  OrderResponseSchema,
+  OrderStatsSchema
+} from './orderSchemas';
 
 class OrderService {
   // Get all orders with optional filters
@@ -44,6 +49,7 @@ class OrderService {
       const url = queryString ? `${endpoints.orders.list}?${queryString}` : endpoints.orders.list;
       
       const response = await api.get<OrdersResponse>(url);
+      // return OrdersResponseSchema.parse(response.data);
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 500) {
@@ -59,6 +65,7 @@ class OrderService {
       const response = await api.get<OrderResponse>(
         `${endpoints.orders.list}/${id}`
       );
+      // return OrderResponseSchema.parse(response.data);
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 500) {
@@ -75,6 +82,7 @@ class OrderService {
         `${endpoints.orders.list}/${id}/status`,
         data
       );
+      // return OrderResponseSchema.parse(response.data);
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 500) {
@@ -90,6 +98,7 @@ class OrderService {
       endpoints.orders.cancel(id),
       data
     );
+    // return OrderResponseSchema.parse(response.data);
     return response.data;
   }
 
@@ -99,13 +108,14 @@ class OrderService {
       const response = await api.get<OrderStats>(
         `${endpoints.orders.list}/stats`
       );
+      // return OrderStatsSchema.parse(response.data);
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 500) {
         throw new Error('Server error occurred while fetching order statistics. Please try again later.');
       }
       throw error;
-    }
+    } 
   }
 
   // Get recent orders
@@ -173,8 +183,8 @@ class OrderService {
       `${endpoints.orders.list}/export?${queryString}` : 
       `${endpoints.orders.list}/export`;
     
-    const response = await api.get(url, {
-      responseType: 'blob',
+    const response = await api.get<Blob>(url, {
+      responseType: 'blob' as const,
     });
     return response.data;
   }
