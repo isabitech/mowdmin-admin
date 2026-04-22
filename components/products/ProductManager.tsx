@@ -19,6 +19,8 @@ export default function ProductManager() {
   const [products, setProducts] = useState<Product[]>([]);
   const [stats, setStats] = useState<ProductStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isStatsLoading, setIsStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -46,10 +48,25 @@ export default function ProductManager() {
 
   const loadStats = async () => {
     try {
+      setIsStatsLoading(true);
+      setStatsError(null);
       const statsData = await productService.getProductStats();
       setStats(statsData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading product stats:', error);
+      setStatsError(error.message || 'Failed to load product statistics');
+      // Set default stats to prevent crashes
+      setStats({
+        totalProducts: 0,
+        activeProducts: 0,
+        inactiveProducts: 0,
+        lowStockProducts: 0,
+        outOfStockProducts: 0,
+        totalInventory: 0,
+        totalValue: 0
+      });
+    } finally {
+      setIsStatsLoading(false);
     }
   };
 
@@ -183,7 +200,38 @@ export default function ProductManager() {
       </div>
 
       {/* Stats Cards */}
-      {stats && <ProductStatsCards stats={stats} />}
+      {isStatsLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          {[...Array(6)].map((_, index) => (
+            <div key={index} className="bg-gray-100 border rounded-lg p-4 animate-pulse">
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-gray-300 rounded"></div>
+                <div className="ml-3 w-0 flex-1">
+                  <div className="h-3 bg-gray-300 rounded mb-2"></div>
+                  <div className="h-4 bg-gray-300 rounded w-16"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : statsError ? (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <span className="text-red-800 text-sm">{statsError}</span>
+            <button
+              onClick={loadStats}
+              className="ml-4 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      ) : stats ? (
+        <ProductStatsCards stats={stats} />
+      ) : null}
 
       {/* Filters */}
       <ProductFiltersPanel

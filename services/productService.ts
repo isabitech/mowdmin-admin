@@ -141,10 +141,49 @@ class ProductService {
       );
       return response.data;
     } catch (error: any) {
-      if (error.response?.status === 500) {
-        throw new Error('Server error occurred while fetching product statistics. Please try again later.');
+      console.error('Product stats API error:', {
+        url: `${endpoints.products.list}/stats`,
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      // If stats endpoint doesn't exist (404) or has server error (500),
+      // calculate stats from existing products as fallback
+      if (error.response?.status === 404 || error.response?.status === 500) {
+        console.log('Stats endpoint not available, calculating from product data...');
+        return this.calculateStatsFromProducts();
       }
+      
       throw error;
+    }
+  }
+
+  // Fallback method to calculate stats from existing product data
+  private async calculateStatsFromProducts(): Promise<ProductStats> {
+    try {
+      const response = await this.getProducts(); // Get all products
+      const products = response.data || [];
+      
+      const stats: ProductStats = {
+        totalProducts: products.length,
+        activeProducts: products.filter(p => p.stock > 0).length,
+        inactiveProducts: products.filter(p => p.stock === 0).length,
+        lowStockProducts: products.filter(p => p.stock > 0 && p.stock <= 5).length,
+        outOfStockProducts: products.filter(p => p.stock === 0).length,
+        totalInventory: products.reduce((sum, p) => sum + p.stock, 0),
+        totalValue: products.reduce((sum, p) => {
+          const price = typeof p.price === 'object' ? 
+            parseFloat(p.price.$numberDecimal) : 
+            parseFloat(p.price.toString());
+          return sum + (price * p.stock);
+        }, 0)
+      };
+      
+      return stats;
+    } catch (error: any) {
+      console.error('Error calculating stats from products:', error);
+      throw new Error('Unable to load product statistics. Please try again later.');
     }
   }
 

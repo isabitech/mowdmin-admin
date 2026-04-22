@@ -25,6 +25,8 @@ export default function ProductCard({
 }: ProductCardProps) {
   const [isEditingStock, setIsEditingStock] = useState(false);
   const [stockValue, setStockValue] = useState(product.stock.toString());
+  const [imageError, setImageError] = useState(false);
+
 
   const handleStockSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,18 +78,20 @@ export default function ProductCard({
           />
           
           <div className="shrink-0">
-            {product.imageUrl ? (
+            {product.imageUrl && !imageError ? (
               <Image
                 src={product.imageUrl}
                 alt={product.name}
-                width={60}
-                height={60}
-                className="rounded-md object-cover"
+                width={64}
+                height={64}
+                className="w-16 h-16 rounded-md object-cover"
+                onError={() => setImageError(true)}
+                unoptimized
               />
             ) : (
               <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center">
                 <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
             )}
@@ -200,18 +204,20 @@ export default function ProductCard({
 
         {/* Product Image */}
         <div className="mb-3">
-          {product.imageUrl ? (
+          {product.imageUrl && !imageError ? (
             <Image
               src={product.imageUrl}
               alt={product.name}
               width={300}
               height={200}
               className="w-full h-40 object-cover rounded-md"
+              onError={() => setImageError(true)}
+              unoptimized
             />
           ) : (
             <div className="w-full h-40 bg-gray-200 rounded-md flex items-center justify-center">
               <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
           )}

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { authService } from '../services/authService';
 import { LoginRequest, RegisterRequest } from '../constant/types';
 import toast from 'react-hot-toast';
+import { useContext } from 'react';
+import { useAuth as useAuthContext } from '../contexts/AuthContext';
 
 export interface UseAuthReturn {
   loading: boolean;
@@ -20,6 +22,7 @@ export const useAuth = (): UseAuthReturn => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const authContext = useAuthContext();
 
   const clearError = useCallback(() => {
     setError(null);
@@ -29,9 +32,11 @@ export const useAuth = (): UseAuthReturn => {
     try {
       setLoading(true);
       setError(null);
-      
-      await authService.login(credentials);
-      
+      const loginData = await authService.login(credentials);
+      // Update AuthContext state immediately
+      if (loginData?.token && loginData?.user) {
+        authContext.login(loginData.token, loginData.user);
+      }
       toast.success('Successfully logged in!');
       router.push('/dashboard');
     } catch (err: any) {
@@ -42,7 +47,7 @@ export const useAuth = (): UseAuthReturn => {
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, authContext]);
 
   const register = useCallback(async (userData: RegisterRequest) => {
     try {
