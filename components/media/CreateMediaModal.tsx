@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { CreateMediaRequest, MediaCategory } from '@/constant/mediaTypes';
 import { mediaCategoryService } from '@/services/mediaCategoryService';
@@ -21,18 +22,19 @@ export default function CreateMediaModal({ isOpen, onClose, onSave }: CreateMedi
     duration: '',
     is_downloadable: false,
     thumbnail: '',
+    thumbnailFile: null,
     isLive: false,
   });
   const [categories, setCategories] = useState<MediaCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState('');
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const data = await mediaCategoryService.getCategories();
         setCategories(data);
-        console.log('Fetched categories:', data);
       } catch (err) {
         console.error('Failed to fetch categories:', err);
       }
@@ -43,7 +45,19 @@ export default function CreateMediaModal({ isOpen, onClose, onSave }: CreateMedi
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    return () => {
+      if (thumbnailPreviewUrl) {
+        URL.revokeObjectURL(thumbnailPreviewUrl);
+      }
+    };
+  }, [thumbnailPreviewUrl]);
+
   const resetForm = () => {
+    if (thumbnailPreviewUrl) {
+      URL.revokeObjectURL(thumbnailPreviewUrl);
+    }
+
     setFormData({
       title: '',
       description: '',
@@ -54,8 +68,10 @@ export default function CreateMediaModal({ isOpen, onClose, onSave }: CreateMedi
       duration: '',
       is_downloadable: false,
       thumbnail: '',
+      thumbnailFile: null,
       isLive: false,
     });
+    setThumbnailPreviewUrl('');
     setError('');
   };
 
@@ -83,6 +99,21 @@ export default function CreateMediaModal({ isOpen, onClose, onSave }: CreateMedi
     }));
   };
 
+  const handleThumbnailFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+
+    if (thumbnailPreviewUrl) {
+      URL.revokeObjectURL(thumbnailPreviewUrl);
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      thumbnailFile: file,
+      thumbnail: '',
+    }));
+    setThumbnailPreviewUrl(file ? URL.createObjectURL(file) : '');
+  };
+
   const handleClose = () => {
     resetForm();
     onClose();
@@ -93,11 +124,21 @@ export default function CreateMediaModal({ isOpen, onClose, onSave }: CreateMedi
     return urlPattern.test(url);
   };
 
-  const isYouTubeUrl = (url: string) => {
-    return url.includes('youtube.com') || url.includes('youtu.be');
-  };
-
   if (!isOpen) return null;
+
+  const mediaUrlLabel =
+    formData.type === 'video'
+      ? 'Video URL *'
+      : formData.type === 'live'
+        ? 'Live Stream URL *'
+        : 'Media URL *';
+
+  const mediaUrlPlaceholder =
+    formData.type === 'video'
+      ? 'https://example.com/video or YouTube link'
+      : formData.type === 'live'
+        ? 'https://example.com/live-stream'
+        : 'https://example.com/media.mp3';
 
   return (
     <div className="fixed inset-0 bg-[#00000093] bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -173,7 +214,7 @@ export default function CreateMediaModal({ isOpen, onClose, onSave }: CreateMedi
 
               <div>
                 <label htmlFor="media_url" className="block text-sm font-medium text-gray-700">
-                  Media URL *
+                  {mediaUrlLabel}
                 </label>
                 <input
                   id="media_url"
@@ -182,12 +223,12 @@ export default function CreateMediaModal({ isOpen, onClose, onSave }: CreateMedi
                   required
                   value={formData.media_url}
                   onChange={handleInputChange}
-                  placeholder="https://example.com/media.mp4"
+                  placeholder={mediaUrlPlaceholder}
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                   disabled={loading}
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Direct media file URLs, YouTube, Vimeo, or other platform URLs
+                  Videos are added by URL. You can upload the thumbnail image from your device below.
                 </p>
               </div>
 
@@ -227,19 +268,38 @@ export default function CreateMediaModal({ isOpen, onClose, onSave }: CreateMedi
               </div>
 
               <div>
-                <label htmlFor="thumbnail" className="block text-sm font-medium text-gray-700">
-                  Thumbnail URL
+                <label htmlFor="thumbnailFile" className="block text-sm font-medium text-gray-700">
+                  Thumbnail Image
                 </label>
                 <input
-                  id="thumbnail"
-                  name="thumbnail"
-                  type="url"
-                  value={formData.thumbnail}
-                  onChange={handleInputChange}
-                  placeholder="https://example.com/thumbnail.jpg"
+                  id="thumbnailFile"
+                  name="thumbnailFile"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleThumbnailFileChange}
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                   disabled={loading}
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  Upload a thumbnail image from this device. Video content should still be linked with a URL above.
+                </p>
+                {formData.thumbnailFile && (
+                  <p className="mt-2 text-sm text-gray-600">
+                    Selected image: {formData.thumbnailFile.name}
+                  </p>
+                )}
+                {thumbnailPreviewUrl && (
+                  <div className="mt-3">
+                    <Image
+                      src={thumbnailPreviewUrl}
+                      alt="Thumbnail preview"
+                      width={320}
+                      height={128}
+                      unoptimized
+                      className="h-32 w-full max-w-xs rounded-md border border-gray-200 object-cover"
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
@@ -304,6 +364,7 @@ export default function CreateMediaModal({ isOpen, onClose, onSave }: CreateMedi
                     <p><strong>URL:</strong> {formData.media_url}</p>
                     <p><strong>Author:</strong> {formData.author || 'N/A'}</p>
                     <p><strong>Duration:</strong> {formData.duration || 'N/A'}</p>
+                    <p><strong>Thumbnail:</strong> {formData.thumbnailFile?.name || 'Not selected'}</p>
                     <p><strong>Live Stream:</strong> {formData.isLive ? 'Yes' : 'No'}</p>
                     <p><strong>Downloadable:</strong> {formData.is_downloadable ? 'Yes' : 'No'}</p>
                   </div>

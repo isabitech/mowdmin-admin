@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { bibleStoryService } from '@/services/bibleStoryService';
 import {
   BibleStory,
@@ -17,9 +17,52 @@ import EditBibleStoryModal from './modals/EditBibleStoryModal';
 import BibleStoryDetailsModal from './modals/BibleStoryDetailsModal';
 import toast from 'react-hot-toast';
 
+const getStatsFromStories = (stories: BibleStory[]): BibleStoryStats => {
+  const storiesByCategory = stories.reduce((acc, story) => {
+    acc[story.category] = (acc[story.category] || 0) + 1;
+    return acc;
+  }, {} as BibleStoryStats['storiesByCategory']);
+
+  const storiesByAgeGroup = stories.reduce((acc, story) => {
+    const ageGroups = Array.isArray(story.ageGroups) ? story.ageGroups : [];
+
+    ageGroups.forEach((ageGroup) => {
+      acc[ageGroup] = (acc[ageGroup] || 0) + 1;
+    });
+    return acc;
+  }, {} as BibleStoryStats['storiesByAgeGroup']);
+
+  const storiesByDifficulty = stories.reduce((acc, story) => {
+    acc[story.difficulty] = (acc[story.difficulty] || 0) + 1;
+    return acc;
+  }, {} as BibleStoryStats['storiesByDifficulty']);
+
+  const recentStories = [...stories]
+    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+    .slice(0, 5);
+
+  const popularStories = [...stories]
+    .sort((a, b) => (b.views || 0) - (a.views || 0))
+    .slice(0, 5);
+
+  return {
+    totalStories: stories.length,
+    publishedStories: stories.filter((story) => story.status === 'published').length,
+    draftStories: stories.filter((story) => story.status === 'draft').length,
+    archivedStories: stories.filter((story) => story.status === 'archived').length,
+    totalViews: stories.reduce((sum, story) => sum + (story.views || 0), 0),
+    totalLikes: stories.reduce((sum, story) => sum + (story.likes || 0), 0),
+    averageRating: 0,
+    storiesByCategory,
+    storiesByAgeGroup,
+    storiesByDifficulty,
+    popularStories,
+    recentStories,
+  };
+};
+
 export default function BibleStoryManager() {
   const [stories, setStories] = useState<BibleStory[]>([]);
-  const [stats, setStats] = useState<BibleStoryStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStories, setSelectedStories] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
@@ -34,16 +77,11 @@ export default function BibleStoryManager() {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedStory, setSelectedStory] = useState<BibleStory | null>(null);
 
-  useEffect(() => {
-    loadStories();
-    loadStats();
-  }, [currentPage, filters]);
-
-  const loadStories = async () => {
+  const loadStories = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await bibleStoryService.getBibleStories(currentPage, 20, filters);
-      setStories(response.data || []);
+      setStories(Array.isArray(response.data) ? response.data : []);
       setTotalPages(response.pagination?.totalPages || 1);
     } catch (error) {
       console.error('Error loading Bible stories:', error);
@@ -51,16 +89,13 @@ export default function BibleStoryManager() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentPage, filters]);
 
-  const loadStats = async () => {
-    try {
-      const statsData = await bibleStoryService.getBibleStoryStats();
-      setStats(statsData);
-    } catch (error) {
-      console.error('Error loading Bible story statistics:', error);
-    }
-  };
+  useEffect(() => {
+    void loadStories();
+  }, [loadStories]);
+
+  const stats = useMemo(() => getStatsFromStories(stories), [stories]);
 
   const handleCreateStory = async (storyData: CreateBibleStoryData) => {
     try {
@@ -68,8 +103,7 @@ export default function BibleStoryManager() {
       await bibleStoryService.createBibleStory(storyData);
       toast.success('Bible story created successfully');
       setIsCreateModalOpen(false);
-      loadStories();
-      loadStats();
+      await loadStories();
     } catch (error) {
       console.error('Error creating Bible story:', error);
       toast.error('Failed to create Bible story');
@@ -88,7 +122,6 @@ export default function BibleStoryManager() {
       setIsEditModalOpen(false);
       setSelectedStory(null);
       setStories(prev => prev.map(s => s.id === updatedStory.id ? updatedStory : s));
-      loadStats();
     } catch (error) {
       console.error('Error updating Bible story:', error);
       toast.error('Failed to update Bible story');
@@ -111,7 +144,6 @@ export default function BibleStoryManager() {
         newSet.delete(storyId);
         return newSet;
       });
-      loadStats();
     } catch (error) {
       console.error('Error deleting Bible story:', error);
       toast.error('Failed to delete Bible story');
@@ -133,7 +165,6 @@ export default function BibleStoryManager() {
       toast.success(`${selectedStories.size} stories deleted successfully`);
       setStories(prev => prev.filter(s => !selectedStories.has(s.id)));
       setSelectedStories(new Set());
-      loadStats();
     } catch (error) {
       console.error('Error bulk deleting stories:', error);
       toast.error('Failed to delete selected stories');
@@ -156,7 +187,7 @@ export default function BibleStoryManager() {
     try {
       await bibleStoryService.likeBibleStory(storyId);
       setStories(prev => prev.map(s => 
-        s.id === storyId ? { ...s, likes: s.likes + 1 } : s
+        s.id === storyId ? { ...s, likes: (s.likes || 0) + 1 } : s
       ));
     } catch (error) {
       console.error('Error liking story:', error);
@@ -231,7 +262,7 @@ export default function BibleStoryManager() {
       </div>
 
       {/* Statistics */}
-      {stats && <BibleStoryStatsCards stats={stats} />}
+      <BibleStoryStatsCards stats={stats} />
 
       {/* Filters */}
       <BibleStoryFiltersPanel

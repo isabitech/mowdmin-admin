@@ -10,7 +10,13 @@ interface PrayerPointCardProps {
 
 export default function PrayerPointCard({ point, onDelete, onEdit }: PrayerPointCardProps) {
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    const parsedDate = new Date(dateString);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return 'Unknown date';
+    }
+
+    return parsedDate.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

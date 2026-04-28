@@ -9,6 +9,7 @@ interface PrayerRequestCardProps {
 
 export default function PrayerRequestCard({ request, onStatusUpdate }: PrayerRequestCardProps) {
   const getStatusBadge = (status: PrayerRequest['status']) => {
+    const safeStatus = status || 'pending';
     const statusStyles = {
       pending: 'bg-yellow-100 text-yellow-800',
       approved: 'bg-green-100 text-green-800',
@@ -17,14 +18,20 @@ export default function PrayerRequestCard({ request, onStatusUpdate }: PrayerReq
     };
 
     return (
-      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusStyles[status]}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusStyles[safeStatus]}`}>
+        {safeStatus.charAt(0).toUpperCase() + safeStatus.slice(1)}
       </span>
     );
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    const parsedDate = new Date(dateString);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return 'Unknown date';
+    }
+
+    return parsedDate.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

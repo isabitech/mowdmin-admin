@@ -1,7 +1,6 @@
 import api from './authService';
 import { endpoints } from '@/constant/endpoints';
 import { 
-  Product, 
   CreateProductData, 
   UpdateProductData, 
   ProductsResponse, 
@@ -173,9 +172,7 @@ class ProductService {
         outOfStockProducts: products.filter(p => p.stock === 0).length,
         totalInventory: products.reduce((sum, p) => sum + p.stock, 0),
         totalValue: products.reduce((sum, p) => {
-          const price = typeof p.price === 'object' ? 
-            parseFloat(p.price.$numberDecimal) : 
-            parseFloat(p.price.toString());
+          const price = parseFloat(p.price.$numberDecimal);
           return sum + (price * p.stock);
         }, 0)
       };

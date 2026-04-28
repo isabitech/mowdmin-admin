@@ -29,7 +29,12 @@ export default function UsersList() {
     fetchUsers();
   }, []);
 
-  const handlePromoteUser = async (userId: string) => {
+  const handlePromoteUser = async (userId?: string) => {
+    if (!userId) {
+      setError('Selected user is missing an ID');
+      return;
+    }
+
     try {
       await authService.promoteUser(userId);
       await fetchUsers(); // Refresh the list
@@ -38,7 +43,12 @@ export default function UsersList() {
     }
   };
 
-  const handleTriggerOtp = async (userId: string) => {
+  const handleTriggerOtp = async (userId?: string) => {
+    if (!userId) {
+      setError('Selected user is missing an ID');
+      return;
+    }
+
     try {
       await authService.triggerUserOtp(userId);
       alert('Password reset OTP sent to user\'s email');
@@ -53,7 +63,10 @@ export default function UsersList() {
   };
 
   const handleUpdateUser = async (userData: any) => {
-    if (!editingUser) return;
+    if (!editingUser?.id) {
+      setError('Selected user is missing an ID');
+      return;
+    }
     
     try {
       await authService.updateUser(editingUser.id, userData);
@@ -125,7 +138,7 @@ export default function UsersList() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {users.map((user) => (
                     <UserTableRow
-                      key={user.id}
+                      key={user.id || user.email}
                       user={user}
                       onPromote={() => handlePromoteUser(user.id)}
                       onEdit={() => handleEditUser(user)}

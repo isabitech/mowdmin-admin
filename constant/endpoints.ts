@@ -178,7 +178,6 @@ export const endpoints = {
         uploadImage: (id: string) => `/bible-stories/${id}/image`,
         uploadAudio: (id: string) => `/bible-stories/${id}/audio`,
         uploadVideo: (id: string) => `/bible-stories/${id}/video`,
-        stats: "/bible-stories/stats",
         analytics: "/bible-stories/analytics",
         search: "/bible-stories/search",
         featured: "/bible-stories/featured",

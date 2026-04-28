@@ -8,11 +8,26 @@ import {
   VerifyOtpRequest,
   ResendOtpRequest,
   ChangePasswordRequest,
-  ApiResponse 
+  ApiResponse,
+  AdminUser
 } from '../constant/types';
 import { endpoints } from '../constant/endpoints';
 
 const BASE_URL = 'https://mowdmin-mobile-be-qwo0.onrender.com/api/v1';
+
+const normalizeAdminUser = (user: Record<string, any>): AdminUser => ({
+  ...user,
+  id: user.id ?? user._id ?? '',
+  name: user.name ?? user.fullName ?? '',
+  email: user.email ?? '',
+  isAdmin: Boolean(user.isAdmin),
+  isVerified: Boolean(user.isVerified ?? user.isEmailVerified),
+  createdAt: user.createdAt ?? '',
+  updatedAt: user.updatedAt ?? user.createdAt ?? '',
+  role: user.role ?? (user.isAdmin ? 'admin' : 'user'),
+  status: user.status ?? 'active',
+  lastLogin: user.lastLogin ?? user.updatedAt ?? user.createdAt,
+});
 
 // Create axios instance
 const api = axios.create({
@@ -131,9 +146,9 @@ export const authService = {
   },
 
   // Admin User Management
-  async getAdminUsers(): Promise<any[]> {
-    const response = await api.get<ApiResponse<any[]>>(endpoints.auth.adminUsers);
-    return response.data.data || [];
+  async getAdminUsers(): Promise<AdminUser[]> {
+    const response = await api.get<ApiResponse<Record<string, any>[]>>(endpoints.auth.adminUsers);
+    return (response.data.data || []).map(normalizeAdminUser);
   },
 
   async promoteUser(userId: string): Promise<ApiResponse> {

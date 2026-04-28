@@ -34,6 +34,7 @@ export interface CreateMediaRequest {
   duration?: string;
   is_downloadable?: boolean;
   thumbnail?: string;
+  thumbnailFile?: File | null;
   isLive?: boolean;
 }
 

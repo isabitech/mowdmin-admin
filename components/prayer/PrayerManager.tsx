@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { prayerService } from '@/services/prayerService';
-import { PrayerRequest, PrayerPoint, CreatePrayerPointRequest } from '@/constant/prayerTypes';
+import { PrayerRequest, PrayerPoint } from '@/constant/prayerTypes';
 import PrayerRequestCard from './PrayerRequestCard';
 import PrayerPointCard from './PrayerPointCard';
 import CreatePrayerPointModal from './CreatePrayerPointModal';
@@ -25,11 +25,7 @@ export default function PrayerManager() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingPoint, setEditingPoint] = useState<PrayerPoint | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
       const [requestsResponse, pointsResponse] = await Promise.all([
@@ -37,21 +33,25 @@ export default function PrayerManager() {
         prayerService.getPrayerPoints(),
       ]);
 
-      setPrayerRequests(requestsResponse || []);
-      setPrayerPoints(pointsResponse || []);
+      setPrayerRequests(Array.isArray(requestsResponse) ? requestsResponse : []);
+      setPrayerPoints(Array.isArray(pointsResponse) ? pointsResponse : []);
     } catch (error) {
       console.error('Error loading prayer data:', error);
       toast.error('Failed to load prayer data');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const handleRequestStatusUpdate = async (id: string, status: PrayerRequest['status']) => {
     try {
       await prayerService.updatePrayerRequestStatus(id, status);
       toast.success('Prayer request updated successfully');
-      loadData();
+      await loadData();
     } catch (error) {
       console.error('Error updating prayer request:', error);
       toast.error('Failed to update prayer request');
@@ -70,7 +70,7 @@ export default function PrayerManager() {
       }
       setIsModalOpen(false);
       setEditingPoint(null);
-      loadData();
+      await loadData();
     } catch (error) {
       console.error('Error creating/updating prayer point:', error);
       toast.error('Failed to save prayer point');
@@ -85,7 +85,7 @@ export default function PrayerManager() {
     try {
       await prayerService.deletePrayerPoint(id);
       toast.success('Prayer point deleted successfully');
-      loadData();
+      await loadData();
     } catch (error) {
       console.error('Error deleting prayer point:', error);
       toast.error('Failed to delete prayer point');

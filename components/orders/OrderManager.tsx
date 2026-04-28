@@ -5,7 +5,7 @@ import { orderService } from '@/services/orderService';
 import { 
   Order, 
   OrderFilters, 
-  OrderStats, 
+  OrderStats,
   UpdateOrderStatusData, 
   CancelOrderData,
   ORDER_STATUS_CONFIG
@@ -18,9 +18,37 @@ import UpdateOrderStatusModal from './UpdateOrderStatusModal';
 import CancelOrderModal from './CancelOrderModal';
 import toast from 'react-hot-toast';
 
+const parseOrderAmount = (order: Order) => {
+  const amount = parseFloat(order.totalAmount?.$numberDecimal ?? '0');
+  return Number.isNaN(amount) ? 0 : amount;
+};
+
+const getOrderStatsFromOrders = (orders: Order[]): OrderStats => {
+  const paidOrders = orders.filter((order) =>
+    ['paid', 'shipped', 'completed'].includes(order.status)
+  );
+  const totalRevenue = paidOrders.reduce((sum, order) => sum + parseOrderAmount(order), 0);
+  const recentThreshold = Date.now() - (7 * 24 * 60 * 60 * 1000);
+
+  return {
+    totalOrders: orders.length,
+    pendingOrders: orders.filter((order) => order.status === 'pending').length,
+    confirmedOrders: orders.filter((order) => order.status === 'paid').length,
+    processingOrders: orders.filter((order) => order.status === 'paid').length,
+    shippedOrders: orders.filter((order) => order.status === 'shipped').length,
+    deliveredOrders: orders.filter((order) => order.status === 'completed').length,
+    cancelledOrders: orders.filter((order) => order.status === 'cancelled').length,
+    totalRevenue,
+    averageOrderValue: orders.length ? totalRevenue / orders.length : 0,
+    recentOrdersCount: orders.filter((order) => {
+      const createdAt = new Date(order.createdAt).getTime();
+      return !Number.isNaN(createdAt) && createdAt >= recentThreshold;
+    }).length,
+  };
+};
+
 export default function OrderManager() {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [stats, setStats] = useState<OrderStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState<OrderFilters>({});
@@ -46,20 +74,9 @@ export default function OrderManager() {
     }
   }, [filters]);
 
-  const loadStats = useCallback(async () => {
-    try {
-      const statsData = await orderService.getOrderStats();
-      setStats(statsData);
-    } catch (error: any) {
-      console.error('Error loading order stats:', error);
-      // Don't show error toast for stats as it's not critical
-    }
-  }, []);
-
   useEffect(() => {
     loadOrders();
-    loadStats();
-  }, [filters, loadOrders, loadStats]);
+  }, [loadOrders]);
 
   const handleOrderSelect = (orderId: string, isSelected: boolean) => {
     const newSelected = new Set(selectedOrders);
@@ -103,8 +120,7 @@ export default function OrderManager() {
       toast.success('Order status updated successfully');
       setIsStatusModalOpen(false);
       setSelectedOrder(null);
-      loadOrders();
-      loadStats();
+      await loadOrders();
     } catch (error: any) {
       console.error('Error updating order status:', error);
       toast.error(error.message || 'Failed to update order status');
@@ -122,8 +138,7 @@ export default function OrderManager() {
       toast.success('Order cancelled successfully');
       setIsCancelModalOpen(false);
       setSelectedOrder(null);
-      loadOrders();
-      loadStats();
+      await loadOrders();
     } catch (error: any) {
       console.error('Error cancelling order:', error);
       toast.error(error.message || 'Failed to cancel order');
@@ -139,8 +154,7 @@ export default function OrderManager() {
       await orderService.bulkUpdateOrderStatus(Array.from(selectedOrders), status);
       toast.success(`${selectedOrders.size} orders updated successfully`);
       setSelectedOrders(new Set());
-      loadOrders();
-      loadStats();
+      await loadOrders();
     } catch (error) {
       console.error('Error bulk updating orders:', error);
       toast.error('Failed to update orders');
@@ -172,6 +186,8 @@ export default function OrderManager() {
   const handleClearFilters = () => {
     setFilters({});
   };
+
+  const stats = getOrderStatsFromOrders(orders);
 
   if (isLoading && orders.length === 0) {
     return (
@@ -207,7 +223,7 @@ export default function OrderManager() {
       </div>
 
       {/* Stats Cards */}
-      {stats && <OrderStatsCards stats={stats} />}
+      <OrderStatsCards stats={stats} />
 
       {/* Filters */}
       <OrderFiltersPanel

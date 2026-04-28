@@ -18,7 +18,55 @@ export const mediaService = {
 
   // Create media
   async createMedia(mediaData: CreateMediaRequest): Promise<ApiResponse> {
-    const response = await api.post<ApiResponse>(endpoints.media.create, mediaData);
+    const hasThumbnailFile = mediaData.thumbnailFile instanceof File;
+
+    if (hasThumbnailFile) {
+      const formData = new FormData();
+
+      formData.append('title', mediaData.title);
+      formData.append('type', mediaData.type);
+      formData.append('media_url', mediaData.media_url);
+
+      if (mediaData.description) {
+        formData.append('description', mediaData.description);
+      }
+
+      if (mediaData.category_id) {
+        formData.append('category_id', mediaData.category_id);
+      }
+
+      if (mediaData.author) {
+        formData.append('author', mediaData.author);
+      }
+
+      if (mediaData.duration) {
+        formData.append('duration', mediaData.duration);
+      }
+
+      if (typeof mediaData.is_downloadable === 'boolean') {
+        formData.append('is_downloadable', mediaData.is_downloadable.toString());
+      }
+
+      if (typeof mediaData.isLive === 'boolean') {
+        formData.append('isLive', mediaData.isLive.toString());
+      }
+
+      if (mediaData.thumbnailFile) {
+        formData.append('thumbnail', mediaData.thumbnailFile);
+      }
+
+      const response = await api.post<ApiResponse>(endpoints.media.create, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    }
+
+    const response = await api.post<ApiResponse>(endpoints.media.create, {
+      ...mediaData,
+      thumbnailFile: undefined,
+    });
     return response.data;
   },
 

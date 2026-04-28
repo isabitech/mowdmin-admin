@@ -4,12 +4,115 @@ import {
   CreateBibleStoryData,
   UpdateBibleStoryData,
   BibleStoryFilters,
-  BibleStoryStats,
   BibleStoryAnalytics,
   BibleStoryQuestion,
   BibleStoryActivity,
 } from '@/constant/bibleStoryTypes';
-import axios from 'axios';
+import api from './authService';
+
+type BibleStoryApi = Partial<BibleStory> & { _id?: string };
+type BibleStoryQuestionApi = Partial<BibleStoryQuestion> & { _id?: string };
+type BibleStoryActivityApi = Partial<BibleStoryActivity> & { _id?: string };
+
+const toStringArray = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+
+const toAgeGroupArray = (value: unknown): BibleStory['ageGroups'] =>
+  Array.isArray(value)
+    ? value.filter(
+        (item): item is BibleStory['ageGroups'][number] => typeof item === 'string'
+      )
+    : [];
+
+const toNumber = (value: unknown): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  return 0;
+};
+
+const toIsoDateString = (value: unknown): string => {
+  const parsedDate =
+    value instanceof Date ? value : new Date(typeof value === 'string' ? value : Date.now());
+
+  return Number.isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
+};
+
+const normalizeQuestion = (
+  question: BibleStoryQuestionApi | null | undefined,
+  index: number
+): BibleStoryQuestion => ({
+  id: question?.id ?? question?._id ?? `question-${index}`,
+  question: question?.question ?? '',
+  type: question?.type ?? 'open-ended',
+  options: toStringArray(question?.options),
+  correctAnswer: typeof question?.correctAnswer === 'string' ? question.correctAnswer : undefined,
+  explanation: typeof question?.explanation === 'string' ? question.explanation : undefined,
+  difficulty: question?.difficulty ?? 'beginner',
+});
+
+const normalizeActivity = (
+  activity: BibleStoryActivityApi | null | undefined,
+  index: number
+): BibleStoryActivity => ({
+  id: activity?.id ?? activity?._id ?? `activity-${index}`,
+  title: activity?.title ?? '',
+  description: activity?.description ?? '',
+  type: activity?.type ?? 'discussion',
+  materials: toStringArray(activity?.materials),
+  duration: toNumber(activity?.duration),
+  instructions: toStringArray(activity?.instructions),
+  ageGroups: toAgeGroupArray(activity?.ageGroups),
+});
+
+const normalizeBibleStory = (
+  story: BibleStoryApi | null | undefined,
+  index: number = 0
+): BibleStory => ({
+  id: story?.id ?? story?._id ?? `story-${index}`,
+  title: story?.title ?? 'Untitled Story',
+  summary: story?.summary ?? '',
+  content: story?.content ?? '',
+  book: story?.book ?? '',
+  chapter: toNumber(story?.chapter),
+  verseStart: toNumber(story?.verseStart),
+  verseEnd: toNumber(story?.verseEnd),
+  category: story?.category ?? 'old_testament',
+  tags: toStringArray(story?.tags),
+  ageGroups: toAgeGroupArray(story?.ageGroups),
+  difficulty: story?.difficulty ?? 'beginner',
+  lessonPoints: toStringArray(story?.lessonPoints),
+  moralLesson: story?.moralLesson ?? '',
+  questions: Array.isArray(story?.questions)
+    ? story.questions.map((question, questionIndex) => normalizeQuestion(question, questionIndex))
+    : [],
+  activities: Array.isArray(story?.activities)
+    ? story.activities.map((activity, activityIndex) => normalizeActivity(activity, activityIndex))
+    : [],
+  relatedStories: toStringArray(story?.relatedStories),
+  audioUrl: story?.audioUrl || undefined,
+  imageUrl: story?.imageUrl || undefined,
+  videoUrl: story?.videoUrl || undefined,
+  downloadable: Boolean(story?.downloadable),
+  featured: Boolean(story?.featured),
+  status: story?.status ?? 'draft',
+  views: toNumber(story?.views),
+  likes: toNumber(story?.likes),
+  createdBy: story?.createdBy ?? '',
+  createdAt: toIsoDateString(story?.createdAt),
+  updatedAt: toIsoDateString(story?.updatedAt),
+});
+
+const normalizeBibleStoryList = (stories: unknown): BibleStory[] =>
+  Array.isArray(stories)
+    ? stories.map((story, index) => normalizeBibleStory(story as BibleStoryApi, index))
+    : [];
 
 class BibleStoryService {
   // Story CRUD operations
@@ -34,57 +137,61 @@ class BibleStoryService {
       });
     }
 
-    const response = await axios.get(`${endpoints.bibleStories.list}?${params}`);
-    return response.data;
+    const response = await api.get(`${endpoints.bibleStories.list}?${params}`);
+    return {
+      ...response.data,
+      data: normalizeBibleStoryList(response.data?.data),
+      pagination: response.data?.pagination ?? {},
+    };
   }
 
   async getBibleStoryById(id: string): Promise<BibleStory> {
-    const response = await axios.get(endpoints.bibleStories.detail(id));
-    return response.data.data;
+    const response = await api.get(endpoints.bibleStories.detail(id));
+    return normalizeBibleStory(response.data?.data);
   }
 
   async createBibleStory(storyData: CreateBibleStoryData): Promise<BibleStory> {
-    const response = await axios.post(endpoints.bibleStories.create, storyData);
-    return response.data.data;
+    const response = await api.post(endpoints.bibleStories.create, storyData);
+    return normalizeBibleStory(response.data?.data);
   }
 
   async updateBibleStory(id: string, storyData: UpdateBibleStoryData): Promise<BibleStory> {
-    const response = await axios.put(endpoints.bibleStories.update(id), storyData);
-    return response.data.data;
+    const response = await api.put(endpoints.bibleStories.update(id), storyData);
+    return normalizeBibleStory(response.data?.data);
   }
 
   async deleteBibleStory(id: string): Promise<void> {
-    await axios.delete(endpoints.bibleStories.delete(id));
+    await api.delete(endpoints.bibleStories.delete(id));
   }
 
   // Bulk operations
   async bulkDeleteBibleStories(ids: string[]): Promise<void> {
-    await axios.delete(endpoints.bibleStories.bulkDelete, {
+    await api.delete(endpoints.bibleStories.bulkDelete, {
       data: { ids }
     });
   }
 
   async bulkUpdateBibleStories(updates: { id: string; data: Partial<UpdateBibleStoryData> }[]): Promise<BibleStory[]> {
-    const response = await axios.put(endpoints.bibleStories.bulkUpdate, { updates });
-    return response.data.data;
+    const response = await api.put(endpoints.bibleStories.bulkUpdate, { updates });
+    return normalizeBibleStoryList(response.data?.data);
   }
 
   // Story interactions
   async likeBibleStory(id: string): Promise<void> {
-    await axios.post(endpoints.bibleStories.like(id));
+    await api.post(endpoints.bibleStories.like(id));
   }
 
   async unlikeBibleStory(id: string): Promise<void> {
-    await axios.delete(endpoints.bibleStories.unlike(id));
+    await api.delete(endpoints.bibleStories.unlike(id));
   }
 
   async incrementViews(id: string): Promise<void> {
-    await axios.post(endpoints.bibleStories.incrementViews(id));
+    await api.post(endpoints.bibleStories.incrementViews(id));
   }
 
   // Questions management
   async addQuestionToStory(storyId: string, question: Omit<BibleStoryQuestion, 'id'>): Promise<BibleStoryQuestion> {
-    const response = await axios.post(
+    const response = await api.post(
       endpoints.bibleStories.addQuestion(storyId),
       question
     );
@@ -92,7 +199,7 @@ class BibleStoryService {
   }
 
   async updateStoryQuestion(storyId: string, questionId: string, question: Partial<BibleStoryQuestion>): Promise<BibleStoryQuestion> {
-    const response = await axios.put(
+    const response = await api.put(
       endpoints.bibleStories.updateQuestion(storyId, questionId),
       question
     );
@@ -100,14 +207,14 @@ class BibleStoryService {
   }
 
   async deleteStoryQuestion(storyId: string, questionId: string): Promise<void> {
-    await axios.delete(
+    await api.delete(
       endpoints.bibleStories.deleteQuestion(storyId, questionId)
     );
   }
 
   // Activities management
   async addActivityToStory(storyId: string, activity: Omit<BibleStoryActivity, 'id'>): Promise<BibleStoryActivity> {
-    const response = await axios.post(
+    const response = await api.post(
       endpoints.bibleStories.addActivity(storyId),
       activity
     );
@@ -115,7 +222,7 @@ class BibleStoryService {
   }
 
   async updateStoryActivity(storyId: string, activityId: string, activity: Partial<BibleStoryActivity>): Promise<BibleStoryActivity> {
-    const response = await axios.put(
+    const response = await api.put(
       endpoints.bibleStories.updateActivity(storyId, activityId),
       activity
     );
@@ -123,7 +230,7 @@ class BibleStoryService {
   }
 
   async deleteStoryActivity(storyId: string, activityId: string): Promise<void> {
-    await axios.delete(
+    await api.delete(
       endpoints.bibleStories.deleteActivity(storyId, activityId)
     );
   }
@@ -133,7 +240,7 @@ class BibleStoryService {
     const formData = new FormData();
     formData.append('image', file);
     
-    const response = await axios.post(
+    const response = await api.post(
       endpoints.bibleStories.uploadImage(id),
       formData,
       {
@@ -147,7 +254,7 @@ class BibleStoryService {
     const formData = new FormData();
     formData.append('audio', file);
     
-    const response = await axios.post(
+    const response = await api.post(
       endpoints.bibleStories.uploadAudio(id),
       formData,
       {
@@ -161,7 +268,7 @@ class BibleStoryService {
     const formData = new FormData();
     formData.append('video', file);
     
-    const response = await axios.post(
+    const response = await api.post(
       endpoints.bibleStories.uploadVideo(id),
       formData,
       {
@@ -171,18 +278,12 @@ class BibleStoryService {
     return response.data.data;
   }
 
-  // Statistics and analytics
-  async getBibleStoryStats(): Promise<BibleStoryStats> {
-    const response = await axios.get(endpoints.bibleStories.stats);
-    return response.data.data;
-  }
-
   async getBibleStoryAnalytics(dateFrom?: string, dateTo?: string): Promise<BibleStoryAnalytics> {
     const params = new URLSearchParams();
     if (dateFrom) params.append('dateFrom', dateFrom);
     if (dateTo) params.append('dateTo', dateTo);
 
-    const response = await axios.get(`${endpoints.bibleStories.analytics}?${params}`);
+    const response = await api.get(`${endpoints.bibleStories.analytics}?${params}`);
     return response.data.data;
   }
 
@@ -206,50 +307,62 @@ class BibleStoryService {
       });
     }
     
-    const response = await axios.get(`${endpoints.bibleStories.search}?${params}`);
-    return response.data.data;
+    const response = await api.get(`${endpoints.bibleStories.search}?${params}`);
+    return normalizeBibleStoryList(response.data?.data);
   }
 
   async getFeaturedStories(): Promise<BibleStory[]> {
-    const response = await axios.get(endpoints.bibleStories.featured);
-    return response.data.data;
+    const response = await api.get(endpoints.bibleStories.featured);
+    return normalizeBibleStoryList(response.data?.data);
   }
 
   async getPopularStories(limit: number = 10): Promise<BibleStory[]> {
-    const response = await axios.get(`${endpoints.bibleStories.popular}?limit=${limit}`);
-    return response.data.data;
+    const response = await api.get(`${endpoints.bibleStories.popular}?limit=${limit}`);
+    return normalizeBibleStoryList(response.data?.data);
   }
 
   async getRecentStories(limit: number = 10): Promise<BibleStory[]> {
-    const response = await axios.get(`${endpoints.bibleStories.recent}?limit=${limit}`);
-    return response.data.data;
+    const response = await api.get(`${endpoints.bibleStories.recent}?limit=${limit}`);
+    return normalizeBibleStoryList(response.data?.data);
   }
 
   async getRelatedStories(storyId: string, limit: number = 5): Promise<BibleStory[]> {
-    const response = await axios.get(`${endpoints.bibleStories.related(storyId)}?limit=${limit}`);
-    return response.data.data;
+    const response = await api.get(`${endpoints.bibleStories.related(storyId)}?limit=${limit}`);
+    return normalizeBibleStoryList(response.data?.data);
   }
 
   // Category and filtering helpers
   async getStoriesByCategory(category: string, page: number = 1, limit: number = 20): Promise<{ data: BibleStory[]; pagination: any }> {
-    const response = await axios.get(
+    const response = await api.get(
       `${endpoints.bibleStories.byCategory(category)}?page=${page}&limit=${limit}`
     );
-    return response.data;
+    return {
+      ...response.data,
+      data: normalizeBibleStoryList(response.data?.data),
+      pagination: response.data?.pagination ?? {},
+    };
   }
 
   async getStoriesByAgeGroup(ageGroup: string, page: number = 1, limit: number = 20): Promise<{ data: BibleStory[]; pagination: any }> {
-    const response = await axios.get(
+    const response = await api.get(
       `${endpoints.bibleStories.byAgeGroup(ageGroup)}?page=${page}&limit=${limit}`
     );
-    return response.data;
+    return {
+      ...response.data,
+      data: normalizeBibleStoryList(response.data?.data),
+      pagination: response.data?.pagination ?? {},
+    };
   }
 
   async getStoriesByDifficulty(difficulty: string, page: number = 1, limit: number = 20): Promise<{ data: BibleStory[]; pagination: any }> {
-    const response = await axios.get(
+    const response = await api.get(
       `${endpoints.bibleStories.byDifficulty(difficulty)}?page=${page}&limit=${limit}`
     );
-    return response.data;
+    return {
+      ...response.data,
+      data: normalizeBibleStoryList(response.data?.data),
+      pagination: response.data?.pagination ?? {},
+    };
   }
 
   // Export and import
@@ -269,7 +382,7 @@ class BibleStoryService {
       });
     }
     
-    const response = await axios.get(`${endpoints.bibleStories.export}?${params}`, {
+    const response = await api.get(`${endpoints.bibleStories.export}?${params}`, {
       responseType: 'blob',
     });
     return response.data;
@@ -279,7 +392,7 @@ class BibleStoryService {
     const formData = new FormData();
     formData.append('file', file);
     
-    const response = await axios.post(endpoints.bibleStories.import, formData, {
+    const response = await api.post(endpoints.bibleStories.import, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data.data;
@@ -287,16 +400,16 @@ class BibleStoryService {
 
   // Tags management
   async getAvailableTags(): Promise<string[]> {
-    const response = await axios.get(endpoints.bibleStories.tags);
+    const response = await api.get(endpoints.bibleStories.tags);
     return response.data.data;
   }
 
   async addTag(storyId: string, tag: string): Promise<void> {
-    await axios.post(endpoints.bibleStories.addTag(storyId), { tag });
+    await api.post(endpoints.bibleStories.addTag(storyId), { tag });
   }
 
   async removeTag(storyId: string, tag: string): Promise<void> {
-    await axios.delete(endpoints.bibleStories.removeTag(storyId), {
+    await api.delete(endpoints.bibleStories.removeTag(storyId), {
       data: { tag }
     });
   }

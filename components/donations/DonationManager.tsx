@@ -6,7 +6,6 @@ import {
   Donation,
   DonationFilters,
   CreateDonationData,
-  UpdateDonationData
 } from '@/constant/donationTypes';
 import DonationCard from './DonationCard';
 import DonationFiltersPanel from './DonationFiltersPanel';
@@ -87,30 +86,10 @@ export default function DonationManager() {
       await donationService.createDonation(data);
       toast.success('Donation created successfully');
       setIsCreateModalOpen(false);
-      loadDonations();
-      loadStats();
+      await loadDonations();
     } catch (error: any) {
       console.error('Error creating donation:', error);
       toast.error(error.message || 'Failed to create donation');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleUpdateDonation = async (data: UpdateDonationData) => {
-    if (!selectedDonation) return;
-
-    try {
-      setIsSubmitting(true);
-      await donationService.updateDonation(selectedDonation.id, data);
-      toast.success('Donation updated successfully');
-      setIsEditModalOpen(false);
-      setSelectedDonation(null);
-      loadDonations();
-      loadStats();
-    } catch (error: any) {
-      console.error('Error updating donation:', error);
-      toast.error(error.message || 'Failed to update donation');
     } finally {
       setIsSubmitting(false);
     }
@@ -122,8 +101,7 @@ export default function DonationManager() {
     try {
       await donationService.deleteDonation(donationId);
       toast.success('Donation deleted successfully');
-      loadDonations();
-      loadStats();
+      await loadDonations();
     } catch (error: any) {
       console.error('Error deleting donation:', error);
       toast.error(error.message || 'Failed to delete donation');
@@ -134,8 +112,7 @@ export default function DonationManager() {
     try {
       await donationService.refundDonation(donationId, reason);
       toast.success('Donation refunded successfully');
-      loadDonations();
-      loadStats();
+      await loadDonations();
     } catch (error: any) {
       console.error('Error refunding donation:', error);
       toast.error(error.message || 'Failed to refund donation');
@@ -201,8 +178,7 @@ export default function DonationManager() {
         toast.error(`${result.failed.length} donations failed to update`);
       }
       setSelectedDonations(new Set());
-      loadDonations();
-      loadStats();
+      await loadDonations();
     } catch (error: any) {
       console.error('Error bulk updating donations:', error);
       toast.error(error.message || 'Failed to update donations');
@@ -495,7 +471,6 @@ export default function DonationManager() {
           setIsEditModalOpen(false);
           setSelectedDonation(null);
           loadDonations();
-          loadStats();
         }}
       />
     </div>
